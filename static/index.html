@@ -3,339 +3,335 @@
 <head>
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
-<title>imgbed</title>
+<title>良辰图床</title>
 <style>
-  * { margin: 0; padding: 0; box-sizing: border-box; }
-  body {
-    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
-    background: #0f0f0f;
-    color: #e0e0e0;
-    min-height: 100vh;
+  *{margin:0;padding:0;box-sizing:border-box}
+  :root{
+    --bg:#111113;--bg2:#19191c;--bg3:#222226;--bg4:#2a2a2f;
+    --border:#2e2e33;--border2:#3a3a40;
+    --text:#e8e8ec;--text2:#a0a0a8;--text3:#6a6a72;
+    --accent:#6c5ce7;--accent2:#a29bfe;--accent-bg:rgba(108,92,231,.08);
+    --danger:#e74c5c;--danger-bg:rgba(231,76,92,.08);
+    --success:#00c48c;--success-bg:rgba(0,196,140,.08);
+    --radius:10px;--radius-sm:6px;
   }
-  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
-
-  /* Header */
-  header { text-align: center; margin-bottom: 2rem; }
-  header h1 { font-size: 1.8rem; font-weight: 600; letter-spacing: -0.02em; }
-  header p { color: #888; margin-top: 0.3rem; font-size: 0.9rem; }
-
-  /* Auth */
-  .auth-bar {
-    display: flex; gap: 0.5rem; margin-bottom: 1.5rem;
-    align-items: center;
-  }
-  .auth-bar input {
-    flex: 1; padding: 0.6rem 0.8rem; background: #1a1a1a;
-    border: 1px solid #333; border-radius: 6px; color: #e0e0e0;
-    font-size: 0.9rem;
-  }
-  .auth-bar input:focus { outline: none; border-color: #555; }
-
-  /* Upload zone */
-  .upload-zone {
-    border: 2px dashed #333; border-radius: 12px;
-    padding: 3rem 1rem; text-align: center;
-    cursor: pointer; transition: all 0.2s;
-    margin-bottom: 1.5rem;
-  }
-  .upload-zone:hover, .upload-zone.dragover {
-    border-color: #666; background: #1a1a1a;
-  }
-  .upload-zone p { color: #888; font-size: 0.95rem; }
-  .upload-zone .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
-  .upload-zone input { display: none; }
-
-  /* Upload result */
-  .upload-result {
-    background: #1a1a1a; border: 1px solid #333;
-    border-radius: 8px; padding: 1rem; margin-bottom: 1rem;
-    display: none;
-  }
-  .upload-result.show { display: block; }
-  .upload-result .url-row {
-    display: flex; gap: 0.5rem; align-items: center;
-    margin-top: 0.5rem;
-  }
-  .upload-result input {
-    flex: 1; padding: 0.4rem 0.6rem; background: #0f0f0f;
-    border: 1px solid #333; border-radius: 4px; color: #e0e0e0;
-    font-size: 0.85rem; font-family: monospace;
-  }
-  .upload-result .thumb-preview {
-    margin-top: 0.5rem; max-height: 80px; border-radius: 4px;
+  body{
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.5;
+    -webkit-font-smoothing:antialiased;
   }
 
-  /* Button */
-  .btn {
-    padding: 0.5rem 1rem; border: 1px solid #444;
-    border-radius: 6px; background: #222; color: #e0e0e0;
-    cursor: pointer; font-size: 0.85rem; white-space: nowrap;
-  }
-  .btn:hover { background: #333; }
-  .btn.primary { background: #2563eb; border-color: #2563eb; }
-  .btn.primary:hover { background: #1d4ed8; }
+  /* ---- layout ---- */
+  .wrap{max-width:960px;margin:0 auto;padding:24px 16px 60px}
 
-  /* Gallery */
-  .gallery-header {
-    display: flex; justify-content: space-between;
-    align-items: center; margin-bottom: 1rem;
+  /* ---- header ---- */
+  .header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 24px;border-bottom:1px solid var(--border);margin-bottom:24px}
+  .header .logo{display:flex;align-items:center;gap:10px}
+  .header .logo span{font-size:20px;font-weight:600;letter-spacing:-.02em}
+  .header .logo em{font-style:normal;font-size:13px;color:var(--text3);background:var(--bg3);padding:2px 8px;border-radius:20px}
+  .header .user{display:flex;align-items:center;gap:8px}
+  .header .user input{
+    width:180px;padding:7px 12px;background:var(--bg2);border:1px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--text);font-size:13px;
+    transition:border-color .2s;
   }
-  .gallery-header h2 { font-size: 1.1rem; font-weight: 500; }
-  .gallery {
-    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
-    gap: 0.8rem;
-  }
-  .gallery-item {
-    background: #1a1a1a; border: 1px solid #222;
-    border-radius: 8px; overflow: hidden;
-    position: relative; transition: border-color 0.2s;
-  }
-  .gallery-item:hover { border-color: #444; }
-  .gallery-item img {
-    width: 100%; height: 140px; object-fit: cover;
-    display: block;
-  }
-  .gallery-item .info {
-    padding: 0.5rem 0.6rem; font-size: 0.75rem; color: #888;
-  }
-  .gallery-item .info .name {
-    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
-    margin-bottom: 0.2rem;
-  }
-  .gallery-item .actions {
-    position: absolute; top: 0.4rem; right: 0.4rem;
-    display: flex; gap: 0.3rem; opacity: 0; transition: opacity 0.2s;
-  }
-  .gallery-item:hover .actions { opacity: 1; }
-  .gallery-item .actions button {
-    padding: 0.2rem 0.5rem; border: none; border-radius: 4px;
-    background: rgba(0,0,0,0.7); color: #fff; cursor: pointer;
-    font-size: 0.75rem;
-  }
-  .gallery-item .actions button:hover { background: rgba(220,38,38,0.8); }
+  .header .user input:focus{outline:none;border-color:var(--accent)}
+  .header .user input::placeholder{color:var(--text3)}
 
-  /* Status */
-  .status {
-    text-align: center; padding: 1rem; color: #666;
-    font-size: 0.85rem;
+  /* ---- buttons ---- */
+  .btn{
+    display:inline-flex;align-items:center;gap:6px;
+    padding:7px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);
+    background:var(--bg3);color:var(--text);font-size:13px;cursor:pointer;
+    transition:all .15s;user-select:none;
   }
+  .btn:hover{background:var(--bg4);border-color:var(--border2)}
+  .btn:active{transform:scale(.97)}
+  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
+  .btn.primary:hover{background:#5b4bd6;border-color:#5b4bd6}
+  .btn.sm{padding:5px 10px;font-size:12px}
+  .btn.ghost{background:transparent;border-color:transparent;color:var(--text2)}
+  .btn.ghost:hover{color:var(--text);background:var(--bg3)}
 
-  /* Pagination */
-  .pagination {
-    display: flex; justify-content: center; gap: 0.5rem;
-    margin-top: 1.5rem;
+  /* ---- upload zone ---- */
+  .upload-area{
+    border:1.5px dashed var(--border2);border-radius:var(--radius);
+    padding:48px 24px;text-align:center;cursor:pointer;
+    transition:all .2s;background:var(--bg2);margin-bottom:20px;
+    position:relative;
   }
+  .upload-area:hover,.upload-area.over{border-color:var(--accent);background:var(--accent-bg)}
+  .upload-area .icon{font-size:36px;margin-bottom:8px;opacity:.6}
+  .upload-area p{color:var(--text2);font-size:14px}
+  .upload-area p small{display:block;margin-top:4px;font-size:12px;color:var(--text3)}
+  .upload-area input{display:none}
 
-  /* Toast */
-  .toast {
-    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
-    background: #333; color: #fff; padding: 0.6rem 1.2rem;
-    border-radius: 8px; font-size: 0.85rem; opacity: 0;
-    transition: opacity 0.3s; pointer-events: none; z-index: 100;
+  /* ---- result card ---- */
+  .result{
+    background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+    padding:16px;margin-bottom:20px;display:none;
   }
-  .toast.show { opacity: 1; }
+  .result.show{display:block}
+  .result .title{font-size:13px;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:6px}
+  .result .title .dot{width:6px;height:6px;border-radius:50%;background:var(--success)}
+  .result .row{display:flex;gap:6px;margin-bottom:8px}
+  .result .row:last-child{margin-bottom:0}
+  .result .row label{
+    flex-shrink:0;width:48px;font-size:12px;color:var(--text3);
+    line-height:32px;text-align:right;padding-right:8px;
+  }
+  .result .row input{
+    flex:1;padding:6px 10px;background:var(--bg);border:1px solid var(--border);
+    border-radius:var(--radius-sm);color:var(--text);font-size:12px;
+    font-family:"SF Mono",Menlo,Consolas,monospace;
+  }
+  .result .row input:focus{outline:none;border-color:var(--accent)}
+  .result .preview{margin-top:10px;border-radius:var(--radius-sm);overflow:hidden;max-height:100px;display:none}
+  .result .preview img{height:100px;object-fit:cover;border-radius:var(--radius-sm)}
+
+  /* ---- gallery ---- */
+  .gallery-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
+  .gallery-bar h2{font-size:15px;font-weight:500;color:var(--text)}
+  .gallery-bar .count{font-size:12px;color:var(--text3);margin-left:8px}
+
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  .card{
+    background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
+    overflow:hidden;position:relative;transition:border-color .2s;
+  }
+  .card:hover{border-color:var(--border2)}
+  .card .img-wrap{position:relative;background:var(--bg);cursor:pointer;overflow:hidden}
+  .card .img-wrap img{width:100%;height:150px;object-fit:cover;display:block;transition:transform .3s}
+  .card:hover .img-wrap img{transform:scale(1.03)}
+  .card .img-wrap .overlay{
+    position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.55));
+    opacity:0;transition:opacity .2s;display:flex;align-items:flex-end;justify-content:flex-end;padding:8px;gap:4px;
+  }
+  .card:hover .img-wrap .overlay{opacity:1}
+  .card .meta{padding:8px 10px}
+  .card .meta .name{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .meta .info{font-size:11px;color:var(--text3);margin-top:2px}
+
+  /* ---- empty ---- */
+  .empty{text-align:center;padding:60px 20px;color:var(--text3)}
+  .empty .icon{font-size:40px;margin-bottom:10px;opacity:.4}
+  .empty p{font-size:14px}
+
+  /* ---- pagination ---- */
+  .pager{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px}
+
+  /* ---- toast ---- */
+  .toast{
+    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
+    padding:8px 18px;background:var(--bg4);border:1px solid var(--border2);
+    border-radius:var(--radius-sm);font-size:13px;color:var(--text);
+    opacity:0;transition:all .25s;pointer-events:none;z-index:99;
+    box-shadow:0 8px 24px rgba(0,0,0,.3);
+  }
+  .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
+
+  /* ---- responsive ---- */
+  @media(max-width:600px){
+    .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
+    .header{flex-direction:column;gap:12px;align-items:flex-start}
+    .header .user input{width:100%}
+  }
 </style>
 </head>
 <body>
-<div class="container">
-  <header>
-    <h1>🖼️ imgbed</h1>
-    <p>simple image hosting</p>
-  </header>
+<div class="wrap">
 
-  <div class="auth-bar">
-    <input type="password" id="tokenInput" placeholder="API Token" />
-    <button class="btn primary" onclick="saveToken()">Save</button>
-  </div>
-
-  <div class="upload-zone" id="dropZone">
-    <div class="icon">📁</div>
-    <p>Drag & drop images here, or click to select</p>
-    <p style="font-size:0.8rem;color:#555;margin-top:0.3rem">JPG / PNG / GIF / WebP · Max 10MB</p>
-    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple />
-  </div>
-
-  <div class="upload-result" id="uploadResult">
-    <strong>Upload complete</strong>
-    <div class="url-row">
-      <input type="text" id="resultUrl" readonly />
-      <button class="btn" onclick="copyUrl()">Copy</button>
+  <div class="header">
+    <div class="logo">
+      <span>良辰图床</span>
+      <em>v1.0</em>
     </div>
-    <img class="thumb-preview" id="resultThumb" style="display:none" />
+    <div class="user">
+      <input type="password" id="token" placeholder="输入访问凭证">
+      <button class="btn sm" onclick="saveToken()">确认</button>
+    </div>
   </div>
 
-  <div class="gallery-header">
-    <h2>Gallery</h2>
-    <button class="btn" onclick="loadGallery()">Refresh</button>
+  <div class="upload-area" id="dropZone">
+    <div class="icon">📤</div>
+    <p>拖拽图片到这里，或者 <strong>点击选择文件</strong>
+      <small>支持 JPG / PNG / GIF / WebP，单文件最大 10MB</small>
+    </p>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
   </div>
-  <div class="gallery" id="gallery"></div>
-  <div class="status" id="status"></div>
-  <div class="pagination" id="pagination"></div>
+
+  <div class="result" id="result">
+    <div class="title"><span class="dot"></span> 上传成功</div>
+    <div class="row">
+      <label>链接</label>
+      <input type="text" id="rUrl" readonly>
+      <button class="btn sm" onclick="copy('rUrl')">复制</button>
+    </div>
+    <div class="row">
+      <label>缩略</label>
+      <input type="text" id="rThumb" readonly>
+      <button class="btn sm" onclick="copy('rThumb')">复制</button>
+    </div>
+    <div class="preview" id="rPreview"><img id="rPreviewImg"></div>
+  </div>
+
+  <div class="gallery-bar">
+    <div style="display:flex;align-items:baseline">
+      <h2>图片库</h2>
+      <span class="count" id="totalCount"></span>
+    </div>
+    <button class="btn sm ghost" onclick="load(0)">刷新</button>
+  </div>
+
+  <div id="gallery"></div>
+  <div class="pager" id="pager"></div>
+
 </div>
 
 <div class="toast" id="toast"></div>
 
 <script>
-const API = '';
-let currentPage = 0;
-const PAGE_SIZE = 20;
+const PAGE = 24;
+let page = 0;
 
-// Token management
-function getToken() { return localStorage.getItem('imgbed_token') || ''; }
-function saveToken() {
-  const t = document.getElementById('tokenInput').value.trim();
-  localStorage.setItem('imgbed_token', t);
-  toast('Token saved');
+/* ---- token ---- */
+function getToken(){ return localStorage.getItem('t')||'' }
+function saveToken(){
+  const v = document.getElementById('token').value.trim();
+  if(!v) return;
+  localStorage.setItem('t', v);
+  toast('已保存');
+  load(0);
 }
-document.getElementById('tokenInput').value = getToken();
+document.getElementById('token').value = getToken();
 
-// Toast
-function toast(msg) {
-  const el = document.getElementById('toast');
-  el.textContent = msg;
-  el.classList.add('show');
-  setTimeout(() => el.classList.remove('show'), 2000);
-}
-
-// Upload
-const dropZone = document.getElementById('dropZone');
-const fileInput = document.getElementById('fileInput');
-
-dropZone.addEventListener('click', () => fileInput.click());
-dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
-dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
-dropZone.addEventListener('drop', e => {
-  e.preventDefault();
-  dropZone.classList.remove('dragover');
-  handleFiles(e.dataTransfer.files);
-});
-fileInput.addEventListener('change', () => handleFiles(fileInput.files));
-
-async function handleFiles(files) {
-  for (const file of files) {
-    await uploadFile(file);
-  }
-  loadGallery();
+/* ---- toast ---- */
+let _tt;
+function toast(s){
+  const el=document.getElementById('toast');
+  el.textContent=s;el.classList.add('show');
+  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),1800);
 }
 
-async function uploadFile(file) {
-  const form = new FormData();
-  form.append('file', file);
+/* ---- upload ---- */
+const drop=document.getElementById('dropZone');
+const fi=document.getElementById('fileInput');
 
-  try {
-    const res = await fetch(API + '/api/upload', {
-      method: 'POST',
-      headers: { 'Authorization': 'Bearer ' + getToken() },
-      body: form,
+drop.onclick=()=>fi.click();
+drop.ondragover=e=>{e.preventDefault();drop.classList.add('over')};
+drop.ondragleave=()=>drop.classList.remove('over');
+drop.ondrop=e=>{
+  e.preventDefault();drop.classList.remove('over');
+  goUpload(e.dataTransfer.files);
+};
+fi.onchange=()=>goUpload(fi.files);
+
+async function goUpload(files){
+  for(const f of files) await upload(f);
+  fi.value='';
+  load(0);
+}
+
+async function upload(file){
+  const fd=new FormData();fd.append('file',file);
+  try{
+    const r=await fetch('/api/upload',{
+      method:'POST',
+      headers:{'Authorization':'Bearer '+getToken()},
+      body:fd
     });
+    if(!r.ok){
+      const e=await r.json().catch(()=>({}));
+      toast(e.error||'上传失败 ('+r.status+')');
+      return;
+    }
+    const d=await r.json();
+    document.getElementById('rUrl').value=d.url;
+    document.getElementById('rThumb').value=d.thumb||'';
+    const pv=document.getElementById('rPreview');
+    const pi=document.getElementById('rPreviewImg');
+    if(d.thumb){pi.src=d.thumb;pv.style.display='block'}
+    else if(d.url){pi.src=d.url;pv.style.display='block'}
+    else pv.style.display='none';
+    document.getElementById('result').classList.add('show');
+    toast('上传成功');
+  }catch(e){toast('网络异常')}
+}
 
-    if (!res.ok) {
-      const err = await res.json().catch(() => ({}));
-      toast('Upload failed: ' + (err.error || res.status));
+function copy(id){
+  const el=document.getElementById(id);
+  el.select();el.setSelectionRange(0,99999);
+  navigator.clipboard.writeText(el.value);
+  toast('已复制');
+}
+
+/* ---- gallery ---- */
+async function load(p){
+  page=p;
+  const g=document.getElementById('gallery');
+  const pg=document.getElementById('pager');
+  const tc=document.getElementById('totalCount');
+  g.innerHTML='<div class="empty"><p>加载中…</p></div>';
+  pg.innerHTML='';tc.textContent='';
+
+  try{
+    const r=await fetch(`/api/images?limit=${PAGE}&offset=${p*PAGE}`,{
+      headers:{'Authorization':'Bearer '+getToken()}
+    });
+    if(!r.ok){g.innerHTML='<div class="empty"><div class="icon">😵</div><p>加载失败</p></div>';return}
+    const d=await r.json();
+
+    if(!d.items||!d.items.length){
+      g.innerHTML='<div class="empty"><div class="icon">📷</div><p>还没有图片，上传一张试试</p></div>';
       return;
     }
 
-    const data = await res.json();
-    document.getElementById('resultUrl').value = data.url;
-    const thumb = document.getElementById('resultThumb');
-    if (data.thumb) {
-      thumb.src = data.thumb;
-      thumb.style.display = 'block';
-    } else {
-      thumb.style.display = 'none';
-    }
-    document.getElementById('uploadResult').classList.add('show');
-    toast('Uploaded: ' + data.id);
-  } catch (e) {
-    toast('Network error');
-  }
-}
-
-function copyUrl() {
-  const input = document.getElementById('resultUrl');
-  input.select();
-  navigator.clipboard.writeText(input.value);
-  toast('Copied!');
-}
-
-// Gallery
-async function loadGallery() {
-  const status = document.getElementById('status');
-  const gallery = document.getElementById('gallery');
-  status.textContent = 'Loading...';
-  gallery.innerHTML = '';
-
-  try {
-    const res = await fetch(API + `/api/images?limit=${PAGE_SIZE}&offset=${currentPage * PAGE_SIZE}`, {
-      headers: { 'Authorization': 'Bearer ' + getToken() },
-    });
-
-    if (!res.ok) { status.textContent = 'Failed to load'; return; }
-
-    const data = await res.json();
-    if (!data.items || data.items.length === 0) {
-      status.textContent = 'No images yet';
-      document.getElementById('pagination').innerHTML = '';
-      return;
-    }
-
-    status.textContent = `${data.total} images total`;
-    gallery.innerHTML = data.items.map(img => `
-      <div class="gallery-item">
-        <img src="${img.thumb || img.url}" alt="${img.filename}" loading="lazy"
-             onclick="window.open('${img.url}','_blank')" />
-        <div class="info">
-          <div class="name" title="${img.filename}">${img.filename}</div>
-          <div>${img.width}×${img.height} · ${formatSize(img.size)}</div>
+    tc.textContent=`共 ${d.total} 张`;
+    g.innerHTML='<div class="grid">'+d.items.map(i=>`
+      <div class="card">
+        <div class="img-wrap" onclick="window.open('${i.url}','_blank')">
+          <img src="${i.thumb||i.url}" alt="${i.filename}" loading="lazy">
+          <div class="overlay">
+            <button class="btn sm" onclick="event.stopPropagation();cp('${i.url}')">链接</button>
+            <button class="btn sm" onclick="event.stopPropagation();del('${i.id}')">删除</button>
+          </div>
         </div>
-        <div class="actions">
-          <button onclick="event.stopPropagation();copyLink('${img.url}')">Copy</button>
-          <button onclick="event.stopPropagation();deleteImage('${img.id}')">Del</button>
+        <div class="meta">
+          <div class="name" title="${i.filename}">${i.filename}</div>
+          <div class="info">${i.width}×${i.height} · ${sz(i.size)}</div>
         </div>
       </div>
-    `).join('');
+    `).join('')+'</div>';
 
-    // Pagination
-    const totalPages = Math.ceil(data.total / PAGE_SIZE);
-    const pag = document.getElementById('pagination');
-    if (totalPages <= 1) { pag.innerHTML = ''; return; }
-    let html = '';
-    if (currentPage > 0) html += `<button class="btn" onclick="goPage(${currentPage-1})">← Prev</button>`;
-    html += `<span style="color:#888;line-height:2.2">${currentPage+1}/${totalPages}</span>`;
-    if (currentPage < totalPages - 1) html += `<button class="btn" onclick="goPage(${currentPage+1})">Next →</button>`;
-    pag.innerHTML = html;
-  } catch (e) {
-    status.textContent = 'Network error';
-  }
+    // pager
+    const tp=Math.ceil(d.total/PAGE);
+    if(tp>1){
+      let h='';
+      if(p>0) h+=`<button class="btn sm" onclick="load(${p-1})">上一页</button>`;
+      h+=`<span style="font-size:12px;color:var(--text3)">${p+1} / ${tp}</span>`;
+      if(p<tp-1) h+=`<button class="btn sm" onclick="load(${p+1})">下一页</button>`;
+      pg.innerHTML=h;
+    }
+  }catch(e){g.innerHTML='<div class="empty"><div class="icon">😵</div><p>网络异常</p></div>'}
 }
 
-function goPage(p) { currentPage = p; loadGallery(); }
-
-function formatSize(bytes) {
-  if (bytes < 1024) return bytes + ' B';
-  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
-  return (bytes/1024/1024).toFixed(1) + ' MB';
-}
-
-async function copyLink(url) {
-  await navigator.clipboard.writeText(url);
-  toast('Link copied');
-}
-
-async function deleteImage(id) {
-  if (!confirm('Delete this image?')) return;
-  try {
-    const res = await fetch(API + '/api/images/' + id, {
-      method: 'DELETE',
-      headers: { 'Authorization': 'Bearer ' + getToken() },
+function cp(url){navigator.clipboard.writeText(url);toast('已复制')}
+async function del(id){
+  if(!confirm('确认删除？')) return;
+  try{
+    const r=await fetch('/api/images/'+id,{
+      method:'DELETE',headers:{'Authorization':'Bearer '+getToken()}
     });
-    if (res.ok) { toast('Deleted'); loadGallery(); }
-    else toast('Delete failed');
-  } catch (e) { toast('Network error'); }
+    if(r.ok){toast('已删除');load(page)}else toast('删除失败');
+  }catch(e){toast('网络异常')}
+}
+function sz(b){
+  if(b<1024)return b+' B';
+  if(b<1048576)return (b/1024).toFixed(1)+' KB';
+  return (b/1048576).toFixed(1)+' MB';
 }
 
-// Init
-loadGallery();
+load(0);
 </script>
 </body>
 </html>
