@@ -1,0 +1,341 @@
+<!DOCTYPE html>
+<html lang="zh-CN">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>imgbed</title>
+<style>
+  * { margin: 0; padding: 0; box-sizing: border-box; }
+  body {
+    font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, sans-serif;
+    background: #0f0f0f;
+    color: #e0e0e0;
+    min-height: 100vh;
+  }
+  .container { max-width: 900px; margin: 0 auto; padding: 2rem 1rem; }
+
+  /* Header */
+  header { text-align: center; margin-bottom: 2rem; }
+  header h1 { font-size: 1.8rem; font-weight: 600; letter-spacing: -0.02em; }
+  header p { color: #888; margin-top: 0.3rem; font-size: 0.9rem; }
+
+  /* Auth */
+  .auth-bar {
+    display: flex; gap: 0.5rem; margin-bottom: 1.5rem;
+    align-items: center;
+  }
+  .auth-bar input {
+    flex: 1; padding: 0.6rem 0.8rem; background: #1a1a1a;
+    border: 1px solid #333; border-radius: 6px; color: #e0e0e0;
+    font-size: 0.9rem;
+  }
+  .auth-bar input:focus { outline: none; border-color: #555; }
+
+  /* Upload zone */
+  .upload-zone {
+    border: 2px dashed #333; border-radius: 12px;
+    padding: 3rem 1rem; text-align: center;
+    cursor: pointer; transition: all 0.2s;
+    margin-bottom: 1.5rem;
+  }
+  .upload-zone:hover, .upload-zone.dragover {
+    border-color: #666; background: #1a1a1a;
+  }
+  .upload-zone p { color: #888; font-size: 0.95rem; }
+  .upload-zone .icon { font-size: 2.5rem; margin-bottom: 0.5rem; }
+  .upload-zone input { display: none; }
+
+  /* Upload result */
+  .upload-result {
+    background: #1a1a1a; border: 1px solid #333;
+    border-radius: 8px; padding: 1rem; margin-bottom: 1rem;
+    display: none;
+  }
+  .upload-result.show { display: block; }
+  .upload-result .url-row {
+    display: flex; gap: 0.5rem; align-items: center;
+    margin-top: 0.5rem;
+  }
+  .upload-result input {
+    flex: 1; padding: 0.4rem 0.6rem; background: #0f0f0f;
+    border: 1px solid #333; border-radius: 4px; color: #e0e0e0;
+    font-size: 0.85rem; font-family: monospace;
+  }
+  .upload-result .thumb-preview {
+    margin-top: 0.5rem; max-height: 80px; border-radius: 4px;
+  }
+
+  /* Button */
+  .btn {
+    padding: 0.5rem 1rem; border: 1px solid #444;
+    border-radius: 6px; background: #222; color: #e0e0e0;
+    cursor: pointer; font-size: 0.85rem; white-space: nowrap;
+  }
+  .btn:hover { background: #333; }
+  .btn.primary { background: #2563eb; border-color: #2563eb; }
+  .btn.primary:hover { background: #1d4ed8; }
+
+  /* Gallery */
+  .gallery-header {
+    display: flex; justify-content: space-between;
+    align-items: center; margin-bottom: 1rem;
+  }
+  .gallery-header h2 { font-size: 1.1rem; font-weight: 500; }
+  .gallery {
+    display: grid; grid-template-columns: repeat(auto-fill, minmax(180px, 1fr));
+    gap: 0.8rem;
+  }
+  .gallery-item {
+    background: #1a1a1a; border: 1px solid #222;
+    border-radius: 8px; overflow: hidden;
+    position: relative; transition: border-color 0.2s;
+  }
+  .gallery-item:hover { border-color: #444; }
+  .gallery-item img {
+    width: 100%; height: 140px; object-fit: cover;
+    display: block;
+  }
+  .gallery-item .info {
+    padding: 0.5rem 0.6rem; font-size: 0.75rem; color: #888;
+  }
+  .gallery-item .info .name {
+    white-space: nowrap; overflow: hidden; text-overflow: ellipsis;
+    margin-bottom: 0.2rem;
+  }
+  .gallery-item .actions {
+    position: absolute; top: 0.4rem; right: 0.4rem;
+    display: flex; gap: 0.3rem; opacity: 0; transition: opacity 0.2s;
+  }
+  .gallery-item:hover .actions { opacity: 1; }
+  .gallery-item .actions button {
+    padding: 0.2rem 0.5rem; border: none; border-radius: 4px;
+    background: rgba(0,0,0,0.7); color: #fff; cursor: pointer;
+    font-size: 0.75rem;
+  }
+  .gallery-item .actions button:hover { background: rgba(220,38,38,0.8); }
+
+  /* Status */
+  .status {
+    text-align: center; padding: 1rem; color: #666;
+    font-size: 0.85rem;
+  }
+
+  /* Pagination */
+  .pagination {
+    display: flex; justify-content: center; gap: 0.5rem;
+    margin-top: 1.5rem;
+  }
+
+  /* Toast */
+  .toast {
+    position: fixed; bottom: 2rem; left: 50%; transform: translateX(-50%);
+    background: #333; color: #fff; padding: 0.6rem 1.2rem;
+    border-radius: 8px; font-size: 0.85rem; opacity: 0;
+    transition: opacity 0.3s; pointer-events: none; z-index: 100;
+  }
+  .toast.show { opacity: 1; }
+</style>
+</head>
+<body>
+<div class="container">
+  <header>
+    <h1>🖼️ imgbed</h1>
+    <p>simple image hosting</p>
+  </header>
+
+  <div class="auth-bar">
+    <input type="password" id="tokenInput" placeholder="API Token" />
+    <button class="btn primary" onclick="saveToken()">Save</button>
+  </div>
+
+  <div class="upload-zone" id="dropZone">
+    <div class="icon">📁</div>
+    <p>Drag & drop images here, or click to select</p>
+    <p style="font-size:0.8rem;color:#555;margin-top:0.3rem">JPG / PNG / GIF / WebP · Max 10MB</p>
+    <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple />
+  </div>
+
+  <div class="upload-result" id="uploadResult">
+    <strong>Upload complete</strong>
+    <div class="url-row">
+      <input type="text" id="resultUrl" readonly />
+      <button class="btn" onclick="copyUrl()">Copy</button>
+    </div>
+    <img class="thumb-preview" id="resultThumb" style="display:none" />
+  </div>
+
+  <div class="gallery-header">
+    <h2>Gallery</h2>
+    <button class="btn" onclick="loadGallery()">Refresh</button>
+  </div>
+  <div class="gallery" id="gallery"></div>
+  <div class="status" id="status"></div>
+  <div class="pagination" id="pagination"></div>
+</div>
+
+<div class="toast" id="toast"></div>
+
+<script>
+const API = '';
+let currentPage = 0;
+const PAGE_SIZE = 20;
+
+// Token management
+function getToken() { return localStorage.getItem('imgbed_token') || ''; }
+function saveToken() {
+  const t = document.getElementById('tokenInput').value.trim();
+  localStorage.setItem('imgbed_token', t);
+  toast('Token saved');
+}
+document.getElementById('tokenInput').value = getToken();
+
+// Toast
+function toast(msg) {
+  const el = document.getElementById('toast');
+  el.textContent = msg;
+  el.classList.add('show');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+
+// Upload
+const dropZone = document.getElementById('dropZone');
+const fileInput = document.getElementById('fileInput');
+
+dropZone.addEventListener('click', () => fileInput.click());
+dropZone.addEventListener('dragover', e => { e.preventDefault(); dropZone.classList.add('dragover'); });
+dropZone.addEventListener('dragleave', () => dropZone.classList.remove('dragover'));
+dropZone.addEventListener('drop', e => {
+  e.preventDefault();
+  dropZone.classList.remove('dragover');
+  handleFiles(e.dataTransfer.files);
+});
+fileInput.addEventListener('change', () => handleFiles(fileInput.files));
+
+async function handleFiles(files) {
+  for (const file of files) {
+    await uploadFile(file);
+  }
+  loadGallery();
+}
+
+async function uploadFile(file) {
+  const form = new FormData();
+  form.append('file', file);
+
+  try {
+    const res = await fetch(API + '/api/upload', {
+      method: 'POST',
+      headers: { 'Authorization': 'Bearer ' + getToken() },
+      body: form,
+    });
+
+    if (!res.ok) {
+      const err = await res.json().catch(() => ({}));
+      toast('Upload failed: ' + (err.error || res.status));
+      return;
+    }
+
+    const data = await res.json();
+    document.getElementById('resultUrl').value = data.url;
+    const thumb = document.getElementById('resultThumb');
+    if (data.thumb) {
+      thumb.src = data.thumb;
+      thumb.style.display = 'block';
+    } else {
+      thumb.style.display = 'none';
+    }
+    document.getElementById('uploadResult').classList.add('show');
+    toast('Uploaded: ' + data.id);
+  } catch (e) {
+    toast('Network error');
+  }
+}
+
+function copyUrl() {
+  const input = document.getElementById('resultUrl');
+  input.select();
+  navigator.clipboard.writeText(input.value);
+  toast('Copied!');
+}
+
+// Gallery
+async function loadGallery() {
+  const status = document.getElementById('status');
+  const gallery = document.getElementById('gallery');
+  status.textContent = 'Loading...';
+  gallery.innerHTML = '';
+
+  try {
+    const res = await fetch(API + `/api/images?limit=${PAGE_SIZE}&offset=${currentPage * PAGE_SIZE}`, {
+      headers: { 'Authorization': 'Bearer ' + getToken() },
+    });
+
+    if (!res.ok) { status.textContent = 'Failed to load'; return; }
+
+    const data = await res.json();
+    if (!data.items || data.items.length === 0) {
+      status.textContent = 'No images yet';
+      document.getElementById('pagination').innerHTML = '';
+      return;
+    }
+
+    status.textContent = `${data.total} images total`;
+    gallery.innerHTML = data.items.map(img => `
+      <div class="gallery-item">
+        <img src="${img.thumb || img.url}" alt="${img.filename}" loading="lazy"
+             onclick="window.open('${img.url}','_blank')" />
+        <div class="info">
+          <div class="name" title="${img.filename}">${img.filename}</div>
+          <div>${img.width}×${img.height} · ${formatSize(img.size)}</div>
+        </div>
+        <div class="actions">
+          <button onclick="event.stopPropagation();copyLink('${img.url}')">Copy</button>
+          <button onclick="event.stopPropagation();deleteImage('${img.id}')">Del</button>
+        </div>
+      </div>
+    `).join('');
+
+    // Pagination
+    const totalPages = Math.ceil(data.total / PAGE_SIZE);
+    const pag = document.getElementById('pagination');
+    if (totalPages <= 1) { pag.innerHTML = ''; return; }
+    let html = '';
+    if (currentPage > 0) html += `<button class="btn" onclick="goPage(${currentPage-1})">← Prev</button>`;
+    html += `<span style="color:#888;line-height:2.2">${currentPage+1}/${totalPages}</span>`;
+    if (currentPage < totalPages - 1) html += `<button class="btn" onclick="goPage(${currentPage+1})">Next →</button>`;
+    pag.innerHTML = html;
+  } catch (e) {
+    status.textContent = 'Network error';
+  }
+}
+
+function goPage(p) { currentPage = p; loadGallery(); }
+
+function formatSize(bytes) {
+  if (bytes < 1024) return bytes + ' B';
+  if (bytes < 1024*1024) return (bytes/1024).toFixed(1) + ' KB';
+  return (bytes/1024/1024).toFixed(1) + ' MB';
+}
+
+async function copyLink(url) {
+  await navigator.clipboard.writeText(url);
+  toast('Link copied');
+}
+
+async function deleteImage(id) {
+  if (!confirm('Delete this image?')) return;
+  try {
+    const res = await fetch(API + '/api/images/' + id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + getToken() },
+    });
+    if (res.ok) { toast('Deleted'); loadGallery(); }
+    else toast('Delete failed');
+  } catch (e) { toast('Network error'); }
+}
+
+// Init
+loadGallery();
+</script>
+</body>
+</html>

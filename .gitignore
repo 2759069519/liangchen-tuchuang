@@ -1,0 +1,15 @@
+# Binary
+imgbed
+imgbed.exe
+
+# Data
+uploads/
+*.db
+*.db-wal
+*.db-shm
+
+# IDE
+.idea/
+.vscode/
+*.swp
+*.swo
