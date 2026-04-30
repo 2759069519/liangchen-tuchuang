@@ -1,44 +1,94 @@
 package main
 
 import (
+	"context"
+	"crypto/sha256"
+	"encoding/hex"
 	"fmt"
 	"log"
 	"net/http"
 	"os"
+	"os/signal"
+	"syscall"
+	"time"
 
+	"imgbed/auth"
 	"imgbed/handler"
 	"imgbed/middleware"
 	"imgbed/store"
 )
 
+type Config struct {
+	Port          string
+	UploadDir     string
+	DBPath        string
+	AuthToken     string
+	AdminPassword string
+	MaxFileSize   int64
+	BaseURL       string
+}
+
+func LoadConfig() *Config {
+	return &Config{
+		Port:          getEnv("PORT", "8080"),
+		UploadDir:     getEnv("UPLOAD_DIR", "./uploads"),
+		DBPath:        getEnv("DB_PATH", "./imgbed.db"),
+		AuthToken:     getEnv("AUTH_TOKEN", ""),
+		AdminPassword: getEnv("ADMIN_PASSWORD", ""),
+		MaxFileSize:   getEnvInt64("MAX_FILE_SIZE", 10*1024*1024),
+		BaseURL:       getEnv("BASE_URL", "http://localhost:8080"),
+	}
+}
+
+func getEnv(key, fallback string) string {
+	if v := os.Getenv(key); v != "" {
+		return v
+	}
+	return fallback
+}
+
+func getEnvInt64(key string, fallback int64) int64 {
+	if v := os.Getenv(key); v != "" {
+		var n int64
+		for _, c := range v {
+			if c >= '0' && c <= '9' {
+				n = n*10 + int64(c-'0')
+			}
+		}
+		if n > 0 { return n }
+	}
+	return fallback
+}
+
 func main() {
 	cfg := LoadConfig()
 
-	// Ensure upload directory exists
 	if err := os.MkdirAll(cfg.UploadDir, 0755); err != nil {
 		log.Fatalf("failed to create upload dir: %v", err)
 	}
 
-	// Init database
 	db, err := store.New(cfg.DBPath)
 	if err != nil {
 		log.Fatalf("failed to init db: %v", err)
 	}
 	defer db.Close()
 
-	// Create handlers
+	auth.InitTokenSecret()
+
+	passwordHash := ""
+	if cfg.AdminPassword != "" {
+		h := sha256.Sum256([]byte(cfg.AdminPassword))
+		passwordHash = hex.EncodeToString(h[:])
+	}
+
 	uploadH := handler.NewUploadHandler(db, cfg.UploadDir, cfg.MaxFileSize, cfg.BaseURL)
 	serveH := handler.NewServeHandler(cfg.UploadDir)
 	deleteH := handler.NewDeleteHandler(db, cfg.UploadDir)
 	listH := handler.NewListHandler(db, cfg.BaseURL)
+	loginH := handler.NewLoginHandler(passwordHash)
 
-	// Setup routes
 	mux := http.NewServeMux()
-
-	// Public: serve images
 	mux.Handle("GET /img/", serveH)
-
-	// Public: web UI
 	mux.HandleFunc("GET /", func(w http.ResponseWriter, r *http.Request) {
 		if r.URL.Path != "/" {
 			http.NotFound(w, r)
@@ -46,31 +96,52 @@ func main() {
 		}
 		http.ServeFile(w, r, "./static/index.html")
 	})
-
-	// API routes (auth required)
 	mux.Handle("POST /api/upload", uploadH)
 	mux.Handle("GET /api/images", listH)
 	mux.Handle("DELETE /api/images/", deleteH)
+	mux.Handle("POST /api/login", loginH)
 
-	// Apply middleware: CORS -> Auth -> Handler
-	handler := middleware.CORS(
-		middleware.Auth(cfg.AuthToken)(mux),
+	h := middleware.Logging(
+		middleware.CORS(
+			middleware.Auth(cfg.AuthToken)(mux),
+		),
 	)
 
-	addr := ":" + cfg.Port
-	fmt.Printf("🖼️  imgbed started on http://localhost%s\n", addr)
-	fmt.Printf("   Upload dir: %s\n", cfg.UploadDir)
-	fmt.Printf("   Max file size: %d MB\n", cfg.MaxFileSize/(1024*1024))
-	fmt.Printf("   Auth token: %s\n", maskToken(cfg.AuthToken))
+	srv := &http.Server{
+		Addr:              ":" + cfg.Port,
+		Handler:           h,
+		ReadTimeout:       10 * time.Second,
+		ReadHeaderTimeout: 5 * time.Second,
+		WriteTimeout:      30 * time.Second,
+		IdleTimeout:       120 * time.Second,
+		MaxHeaderBytes:    1 << 20,
+	}
 
-	if err := http.ListenAndServe(addr, handler); err != nil {
+	fmt.Printf("imgbed started on http://localhost:%s\n", cfg.Port)
+	fmt.Printf("  Upload dir: %s\n", cfg.UploadDir)
+	fmt.Printf("  Max file size: %d MB\n", cfg.MaxFileSize/(1024*1024))
+	if cfg.AuthToken != "" {
+		fmt.Printf("  Auth token: %s\n", cfg.AuthToken[:2]+"***"+cfg.AuthToken[len(cfg.AuthToken)-2:])
+	}
+	if passwordHash != "" {
+		fmt.Printf("  Admin login: enabled\n")
+	}
+	fmt.Printf("  Guest upload limit: 20/hour per IP\n")
+
+	go func() {
+		sigCh := make(chan os.Signal, 1)
+		signal.Notify(sigCh, syscall.SIGINT, syscall.SIGTERM)
+		sig := <-sigCh
+		log.Printf("received signal %v, shutting down...", sig)
+		ctx, cancel := context.WithTimeout(context.Background(), 10*time.Second)
+		defer cancel()
+		if err := srv.Shutdown(ctx); err != nil {
+			log.Printf("shutdown error: %v", err)
+		}
+	}()
+
+	if err := srv.ListenAndServe(); err != nil && err != http.ErrServerClosed {
 		log.Fatalf("server error: %v", err)
 	}
-}
-
-func maskToken(token string) string {
-	if len(token) <= 4 {
-		return "****"
-	}
-	return token[:2] + "***" + token[len(token)-2:]
+	log.Printf("server stopped")
 }

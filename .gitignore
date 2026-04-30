@@ -13,3 +13,13 @@ uploads/
 .vscode/
 *.swp
 *.swo
+*.bak
+*.bak.*
+*.broken.*
+imgbed
+imgbed.old
+imgbed.before_fix
+uploads/
+*.db
+*.db-shm
+*.db-wal

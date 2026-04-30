@@ -4,331 +4,879 @@
 <meta charset="UTF-8">
 <meta name="viewport" content="width=device-width, initial-scale=1.0">
 <title>良辰图床</title>
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.5.1/css/all.min.css">
 <style>
   *{margin:0;padding:0;box-sizing:border-box}
   :root{
-    --bg:#111113;--bg2:#19191c;--bg3:#222226;--bg4:#2a2a2f;
-    --border:#2e2e33;--border2:#3a3a40;
-    --text:#e8e8ec;--text2:#a0a0a8;--text3:#6a6a72;
-    --accent:#6c5ce7;--accent2:#a29bfe;--accent-bg:rgba(108,92,231,.08);
-    --danger:#e74c5c;--danger-bg:rgba(231,76,92,.08);
-    --success:#00c48c;--success-bg:rgba(0,196,140,.08);
-    --radius:10px;--radius-sm:6px;
+    --bg:#f5f7fb;
+    --bg2:#ffffff;
+    --bg-card:#ffffff;
+    --bg-input:#f0f2f8;
+    --text:#1e293b;
+    --text2:#64748b;
+    --text3:#94a3b8;
+    --accent:#7c5cfc;
+    --accent2:#9b85ff;
+    --accent-dim:rgba(124,92,252,.08);
+    --accent-glow:rgba(124,92,252,.18);
+    --success:#10b981;
+    --success-dim:rgba(16,185,129,.08);
+    --danger:#ef4444;
+    --danger-dim:rgba(239,68,68,.08);
+    --border:rgba(0,0,0,.06);
+    --radius:16px;
+    --shadow:0 2px 12px rgba(0,0,0,.06);
+    --shadow-md:0 4px 20px rgba(0,0,0,.08);
+    --shadow-lg:0 8px 30px rgba(0,0,0,.1);
+    --transition:.2s cubic-bezier(.4,0,.2,1);
   }
   body{
-    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Text","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
-    background:var(--bg);color:var(--text);line-height:1.5;
-    -webkit-font-smoothing:antialiased;
+    font-family:-apple-system,BlinkMacSystemFont,"SF Pro Display","Helvetica Neue","PingFang SC","Microsoft YaHei",sans-serif;
+    background:var(--bg);color:var(--text);line-height:1.6;
+    -webkit-font-smoothing:antialiased;min-height:100vh;overflow-x:hidden;
   }
 
-  /* ---- layout ---- */
-  .wrap{max-width:960px;margin:0 auto;padding:24px 16px 60px}
-
-  /* ---- header ---- */
-  .header{display:flex;align-items:center;justify-content:space-between;padding:16px 0 24px;border-bottom:1px solid var(--border);margin-bottom:24px}
-  .header .logo{display:flex;align-items:center;gap:10px}
-  .header .logo span{font-size:20px;font-weight:600;letter-spacing:-.02em}
-  .header .logo em{font-style:normal;font-size:13px;color:var(--text3);background:var(--bg3);padding:2px 8px;border-radius:20px}
-  .header .user{display:flex;align-items:center;gap:8px}
-  .header .user input{
-    width:180px;padding:7px 12px;background:var(--bg2);border:1px solid var(--border);
-    border-radius:var(--radius-sm);color:var(--text);font-size:13px;
-    transition:border-color .2s;
+  /* Soft gradient background */
+  body::before{
+    content:'';position:fixed;inset:0;z-index:0;pointer-events:none;
+    background:
+      radial-gradient(ellipse 900px 600px at 15% 10%, rgba(124,92,252,.05), transparent 70%),
+      radial-gradient(ellipse 700px 500px at 85% 90%, rgba(16,185,129,.04), transparent 70%);
   }
-  .header .user input:focus{outline:none;border-color:var(--accent)}
-  .header .user input::placeholder{color:var(--text3)}
 
-  /* ---- buttons ---- */
-  .btn{
-    display:inline-flex;align-items:center;gap:6px;
-    padding:7px 16px;border:1px solid var(--border);border-radius:var(--radius-sm);
-    background:var(--bg3);color:var(--text);font-size:13px;cursor:pointer;
-    transition:all .15s;user-select:none;
-  }
-  .btn:hover{background:var(--bg4);border-color:var(--border2)}
-  .btn:active{transform:scale(.97)}
-  .btn.primary{background:var(--accent);border-color:var(--accent);color:#fff}
-  .btn.primary:hover{background:#5b4bd6;border-color:#5b4bd6}
-  .btn.sm{padding:5px 10px;font-size:12px}
-  .btn.ghost{background:transparent;border-color:transparent;color:var(--text2)}
-  .btn.ghost:hover{color:var(--text);background:var(--bg3)}
+  .container{max-width:900px;margin:0 auto;padding:28px 20px 100px;position:relative;z-index:1}
 
-  /* ---- upload zone ---- */
-  .upload-area{
-    border:1.5px dashed var(--border2);border-radius:var(--radius);
-    padding:48px 24px;text-align:center;cursor:pointer;
-    transition:all .2s;background:var(--bg2);margin-bottom:20px;
-    position:relative;
+  /* Upload zone */
+  .upload-zone{
+    border:2px dashed rgba(0,0,0,.08);border-radius:var(--radius);
+    padding:52px 24px;text-align:center;cursor:pointer;
+    background:var(--bg-card);
+    transition:all var(--transition);position:relative;overflow:hidden;
+    margin-bottom:28px;box-shadow:var(--shadow);
   }
-  .upload-area:hover,.upload-area.over{border-color:var(--accent);background:var(--accent-bg)}
-  .upload-area .icon{font-size:36px;margin-bottom:8px;opacity:.6}
-  .upload-area p{color:var(--text2);font-size:14px}
-  .upload-area p small{display:block;margin-top:4px;font-size:12px;color:var(--text3)}
-  .upload-area input{display:none}
+  .upload-zone::before{
+    content:'';position:absolute;inset:0;z-index:0;
+    background:radial-gradient(ellipse 300px 200px at 50% 50%,rgba(124,92,252,.03),transparent);
+  }
+  .upload-zone:hover,.upload-zone.over{
+    border-color:var(--accent);
+    box-shadow:0 0 0 4px var(--accent-dim),var(--shadow-md);
+  }
+  .upload-zone .upload-icon{
+    width:60px;height:60px;margin:0 auto 16px;border-radius:50%;
+    background:var(--accent-dim);display:flex;align-items:center;justify-content:center;
+    transition:all .3s;
+  }
+  .upload-zone:hover .upload-icon{transform:translateY(-3px);background:var(--accent-glow)}
+  .upload-zone .upload-icon i{font-size:24px;color:var(--accent)}
+  .upload-zone p{color:var(--text2);font-size:14px;position:relative;z-index:1}
+  .upload-zone p strong{color:var(--accent);cursor:pointer}
+  .upload-zone p small{display:block;margin-top:8px;font-size:12px;color:var(--text3)}
+  .upload-zone .guest-hint{
+    display:inline-block;margin-top:12px;padding:4px 14px;font-size:11px;
+    background:var(--accent-dim);color:var(--accent);border-radius:20px;
+  }
+  .upload-zone input[type="file"]{display:none}
 
-  /* ---- result card ---- */
-  .result{
-    background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
-    padding:16px;margin-bottom:20px;display:none;
+  /* Progress */
+  .progress-bar{
+    display:none;margin-bottom:28px;padding:16px 20px;
+    background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);
   }
-  .result.show{display:block}
-  .result .title{font-size:13px;font-weight:500;margin-bottom:10px;display:flex;align-items:center;gap:6px}
-  .result .title .dot{width:6px;height:6px;border-radius:50%;background:var(--success)}
-  .result .row{display:flex;gap:6px;margin-bottom:8px}
-  .result .row:last-child{margin-bottom:0}
-  .result .row label{
-    flex-shrink:0;width:48px;font-size:12px;color:var(--text3);
-    line-height:32px;text-align:right;padding-right:8px;
-  }
-  .result .row input{
-    flex:1;padding:6px 10px;background:var(--bg);border:1px solid var(--border);
-    border-radius:var(--radius-sm);color:var(--text);font-size:12px;
-    font-family:"SF Mono",Menlo,Consolas,monospace;
-  }
-  .result .row input:focus{outline:none;border-color:var(--accent)}
-  .result .preview{margin-top:10px;border-radius:var(--radius-sm);overflow:hidden;max-height:100px;display:none}
-  .result .preview img{height:100px;object-fit:cover;border-radius:var(--radius-sm)}
+  .progress-bar.show{display:block;animation:slideUp .3s ease}
+  .progress-info{display:flex;justify-content:space-between;margin-bottom:10px;font-size:13px;color:var(--text2)}
+  .progress-track{height:4px;background:var(--bg-input);border-radius:2px;overflow:hidden}
+  .progress-fill{height:100%;background:linear-gradient(90deg,var(--accent),var(--success));border-radius:2px;transition:width .3s;width:0}
 
-  /* ---- gallery ---- */
-  .gallery-bar{display:flex;align-items:center;justify-content:space-between;margin-bottom:14px}
-  .gallery-bar h2{font-size:15px;font-weight:500;color:var(--text)}
-  .gallery-bar .count{font-size:12px;color:var(--text3);margin-left:8px}
+  /* Result Card */
+  .result-card{
+    display:none;padding:24px;margin-bottom:28px;
+    background:var(--bg-card);border-radius:var(--radius);box-shadow:var(--shadow);position:relative;
+  }
+  .result-card.show{display:block;animation:slideUp .3s ease}
+  .result-card::before{
+    content:'';position:absolute;top:0;left:24px;right:24px;height:1px;
+    background:linear-gradient(90deg,transparent,var(--accent),transparent);opacity:.4;
+  }
+  .result-title{display:flex;align-items:center;gap:8px;font-size:14px;font-weight:600;margin-bottom:16px}
+  .result-title .dot{width:6px;height:6px;border-radius:50%;background:var(--accent);box-shadow:0 0 8px var(--accent-glow)}
+  .result-row{display:flex;gap:8px;margin-bottom:10px;align-items:center}
+  .result-row label{flex-shrink:0;width:48px;font-size:12px;color:var(--text3);text-align:right}
+  .result-row input{
+    flex:1;padding:10px 14px;font-size:12px;
+    font-family:"SF Mono","Fira Code",monospace;
+    background:var(--bg-input);border:1px solid var(--border);
+    border-radius:10px;color:var(--text);transition:border var(--transition);
+    min-width:0;
+  }
+  .result-row input:focus{outline:none;border-color:var(--accent)}
+  .result-preview{margin-top:12px;border-radius:10px;overflow:hidden;max-height:100px;display:none}
+  .result-preview img{height:100px;object-fit:cover}
 
-  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:10px}
+  .copy-dropdown{position:relative;display:inline-flex;flex-shrink:0}
+  .copy-menu{
+    position:absolute;bottom:calc(100% + 6px);right:0;
+    background:var(--bg-card);border:1px solid var(--border);border-radius:12px;
+    padding:4px;display:none;flex-direction:column;gap:2px;z-index:10;
+    min-width:110px;box-shadow:var(--shadow-lg);
+  }
+  .copy-menu.show{display:flex;animation:slideUp .15s ease}
+  .copy-menu .opt{
+    padding:8px 14px;font-size:12px;border-radius:8px;cursor:pointer;
+    color:var(--text2);transition:all .15s;white-space:nowrap;
+  }
+  .copy-menu .opt:hover{background:var(--accent-dim);color:var(--accent)}
+
+  /* Gallery */
+  .gallery-header{
+    display:flex;align-items:center;justify-content:space-between;margin-bottom:20px;
+  }
+  .gallery-header h2{font-size:16px;font-weight:600;color:var(--text)}
+  .gallery-header .count{font-size:12px;color:var(--text3);margin-left:8px}
+
+  .btn-icon{
+    width:36px;height:36px;border:none;border-radius:10px;
+    background:var(--bg-card);color:var(--text2);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:all var(--transition);box-shadow:var(--shadow);
+  }
+  .btn-icon:hover{color:var(--accent);box-shadow:var(--shadow-md)}
+
+  /* Card Grid */
+  .grid{display:grid;grid-template-columns:repeat(auto-fill,minmax(200px,1fr));gap:18px}
   .card{
-    background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);
-    overflow:hidden;position:relative;transition:border-color .2s;
+    background:var(--bg-card);
+    border-radius:var(--radius);overflow:hidden;
+    box-shadow:var(--shadow);
+    transition:all .25s cubic-bezier(.4,0,.2,1);position:relative;
   }
-  .card:hover{border-color:var(--border2)}
-  .card .img-wrap{position:relative;background:var(--bg);cursor:pointer;overflow:hidden}
-  .card .img-wrap img{width:100%;height:150px;object-fit:cover;display:block;transition:transform .3s}
-  .card:hover .img-wrap img{transform:scale(1.03)}
-  .card .img-wrap .overlay{
-    position:absolute;inset:0;background:linear-gradient(transparent 40%,rgba(0,0,0,.55));
-    opacity:0;transition:opacity .2s;display:flex;align-items:flex-end;justify-content:flex-end;padding:8px;gap:4px;
+  .card:hover{
+    transform:translateY(-3px);box-shadow:var(--shadow-lg);
   }
-  .card:hover .img-wrap .overlay{opacity:1}
-  .card .meta{padding:8px 10px}
-  .card .meta .name{font-size:12px;color:var(--text2);white-space:nowrap;overflow:hidden;text-overflow:ellipsis}
+  .card .thumb{position:relative;overflow:hidden;cursor:pointer;background:var(--bg-input)}
+  .card .thumb img{
+    width:100%;height:155px;object-fit:cover;display:block;
+    transition:transform .35s cubic-bezier(.4,0,.2,1);
+  }
+  .card:hover .thumb img{transform:scale(1.05)}
+  .card .meta{padding:10px 14px}
+  .card .meta .name{
+    font-size:12px;font-weight:500;color:var(--text2);
+    white-space:nowrap;overflow:hidden;text-overflow:ellipsis;
+  }
   .card .meta .info{font-size:11px;color:var(--text3);margin-top:2px}
 
-  /* ---- empty ---- */
-  .empty{text-align:center;padding:60px 20px;color:var(--text3)}
-  .empty .icon{font-size:40px;margin-bottom:10px;opacity:.4}
+  .card-action{
+    position:absolute;bottom:8px;right:8px;z-index:2;
+    width:32px;height:32px;border:none;border-radius:8px;
+    background:rgba(255,255,255,.9);color:var(--text3);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    opacity:0;transition:all var(--transition);box-shadow:var(--shadow);
+  }
+  .card:hover .card-action{opacity:1}
+  .card-action:hover{color:var(--accent)}
+  .card-action.copied{color:var(--success)}
+  @media(hover:none){.card-action{opacity:1}}
+
+  /* Empty */
+  .empty{text-align:center;padding:64px 20px;color:var(--text3)}
+  .empty i{font-size:40px;margin-bottom:14px;opacity:.3;display:block}
   .empty p{font-size:14px}
 
-  /* ---- pagination ---- */
-  .pager{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:20px}
+  /* Pager */
+  .pager{display:flex;align-items:center;justify-content:center;gap:8px;margin-top:32px}
+  .btn{
+    display:inline-flex;align-items:center;justify-content:center;gap:6px;
+    padding:8px 18px;font-size:13px;font-weight:500;
+    border:none;border-radius:10px;
+    background:var(--bg-card);color:var(--text2);cursor:pointer;
+    box-shadow:var(--shadow);transition:all var(--transition);
+    user-select:none;white-space:nowrap;
+  }
+  .btn:hover{color:var(--text);box-shadow:var(--shadow-md)}
+  .btn.sm{padding:6px 12px;font-size:12px;border-radius:8px}
+  .btn.btn-accent{background:var(--accent);color:#fff;box-shadow:0 4px 14px rgba(124,92,252,.25)}
+  .btn.btn-accent:hover{background:var(--accent2);box-shadow:0 6px 20px rgba(124,92,252,.35)}
+  .btn.btn-danger{background:var(--danger);color:#fff}
 
-  /* ---- toast ---- */
+  /* Toast */
   .toast{
-    position:fixed;bottom:24px;left:50%;transform:translateX(-50%) translateY(20px);
-    padding:8px 18px;background:var(--bg4);border:1px solid var(--border2);
-    border-radius:var(--radius-sm);font-size:13px;color:var(--text);
-    opacity:0;transition:all .25s;pointer-events:none;z-index:99;
-    box-shadow:0 8px 24px rgba(0,0,0,.3);
+    position:fixed;bottom:28px;left:50%;z-index:999;
+    transform:translateX(-50%) translateY(16px);
+    padding:10px 22px;font-size:13px;color:var(--text);
+    background:var(--bg-card);border:1px solid var(--border);
+    border-radius:12px;opacity:0;pointer-events:none;
+    transition:all .28s cubic-bezier(.4,0,.2,1);
+    box-shadow:var(--shadow-lg);
   }
   .toast.show{opacity:1;transform:translateX(-50%) translateY(0)}
 
-  /* ---- responsive ---- */
-  @media(max-width:600px){
-    .grid{grid-template-columns:repeat(auto-fill,minmax(140px,1fr))}
-    .header{flex-direction:column;gap:12px;align-items:flex-start}
-    .header .user input{width:100%}
+  /* Settings FAB */
+  .fab-settings{
+    position:fixed;bottom:24px;right:24px;z-index:50;
+    width:48px;height:48px;border:none;border-radius:50%;
+    background:var(--bg-card);color:var(--text2);cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    box-shadow:var(--shadow-md);transition:all var(--transition);
+    font-size:18px;
+  }
+  .fab-settings:hover{color:var(--accent);transform:rotate(30deg)}
+  .fab-settings.has-token{color:var(--success)}
+
+  /* Settings Panel */
+  .settings-panel{
+    position:fixed;bottom:84px;right:24px;z-index:50;
+    width:300px;padding:20px;
+    background:var(--bg-card);
+    border-radius:var(--radius);
+    box-shadow:var(--shadow-lg);
+    display:none;animation:slideUp .25s ease;
+  }
+  .settings-panel.show{display:block}
+  .settings-panel h3{font-size:14px;font-weight:600;margin-bottom:12px;color:var(--text)}
+  .settings-panel .field{margin-bottom:12px}
+  .settings-panel .field label{display:block;font-size:11px;color:var(--text3);margin-bottom:6px;text-transform:uppercase;letter-spacing:.5px}
+  .settings-panel .field input{
+    width:100%;padding:10px 14px;font-size:13px;
+    background:var(--bg-input);border:1px solid var(--border);
+    border-radius:10px;color:var(--text);transition:border var(--transition);
+  }
+  .settings-panel .field input:focus{outline:none;border-color:var(--accent)}
+  .settings-panel .field input::placeholder{color:var(--text3)}
+  .settings-panel .actions{display:flex;gap:8px;justify-content:flex-end}
+  .settings-panel .status{font-size:11px;margin-top:8px;padding:6px 10px;border-radius:8px;display:none}
+  .settings-panel .status.show{display:block}
+  .settings-panel .status.ok{background:var(--success-dim);color:var(--success)}
+  .settings-panel .status.err{background:var(--danger-dim);color:var(--danger)}
+
+  /* Lightbox */
+  .lightbox{
+    position:fixed;inset:0;z-index:100;
+    background:rgba(0,0,0,.88);backdrop-filter:blur(16px);
+    display:none;align-items:center;justify-content:center;opacity:0;transition:opacity .25s;
+  }
+  .lightbox.show{display:flex;opacity:1}
+  .lb-topbar{
+    position:absolute;top:0;left:0;right:0;z-index:2;
+    display:flex;align-items:center;justify-content:space-between;
+    padding:14px 20px;background:linear-gradient(rgba(0,0,0,.4),transparent);
+  }
+  .lb-counter{color:rgba(255,255,255,.4);font-size:13px;font-weight:500}
+  .lb-actions{display:flex;gap:6px;position:relative}
+  .lb-btn{
+    width:38px;height:38px;border:none;border-radius:10px;
+    background:rgba(255,255,255,.08);color:rgba(255,255,255,.6);
+    cursor:pointer;display:flex;align-items:center;justify-content:center;
+    transition:all var(--transition);
+  }
+  .lb-btn:hover{background:rgba(255,255,255,.15);color:#fff}
+  .lb-btn.copied{background:rgba(16,185,129,.2);color:#6ee7b7}
+  .lb-btn.danger:hover{background:rgba(239,68,68,.2);color:#fca5a5}
+  .lb-nav{
+    position:absolute;top:50%;transform:translateY(-50%);
+    width:44px;height:44px;border-radius:50%;z-index:2;
+    background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.08);
+    color:rgba(255,255,255,.4);font-size:18px;cursor:pointer;
+    display:flex;align-items:center;justify-content:center;
+    transition:all var(--transition);
+  }
+  .lb-nav:hover{background:rgba(255,255,255,.12);color:#fff}
+  .lb-prev{left:16px}
+  .lb-next{right:16px}
+  .lb-img{
+    max-width:90vw;max-height:85vh;object-fit:contain;
+    border-radius:8px;box-shadow:0 8px 40px rgba(0,0,0,.5);
+    transition:opacity .2s;
+  }
+  .lb-info{
+    position:absolute;bottom:0;left:0;right:0;z-index:2;
+    padding:20px;background:linear-gradient(transparent,rgba(0,0,0,.5));
+    display:flex;align-items:center;justify-content:space-between;
+  }
+  .lb-filename{color:#fff;font-size:13px;font-weight:500}
+  .lb-meta{color:rgba(255,255,255,.35);font-size:11px;margin-top:2px}
+  .lb-copy-menu{
+    position:fixed;top:50%;left:50%;transform:translate(-50%,-50%);z-index:200;
+    background:rgba(28,28,38,.97);border:1px solid rgba(255,255,255,.1);
+    border-radius:16px;padding:8px;
+    display:none;flex-direction:column;gap:2px;
+    backdrop-filter:blur(24px);box-shadow:0 12px 40px rgba(0,0,0,.5);
+    min-width:200px;max-width:calc(100vw - 48px);
+  }
+  .lb-copy-menu.show{display:flex;animation:popIn .2s ease}
+  @keyframes popIn{
+    from{opacity:0;transform:translate(-50%,-50%) scale(.9)}
+    to{opacity:1;transform:translate(-50%,-50%) scale(1)}
+  }
+  .lb-copy-menu .opt{
+    padding:12px 18px;font-size:14px;border-radius:10px;cursor:pointer;
+    color:rgba(255,255,255,.7);transition:all .15s;display:flex;align-items:center;gap:10px;
+  }
+  .lb-copy-menu .opt:active{background:rgba(255,255,255,.1);color:#fff}
+  .lb-copy-menu .opt i{width:18px;text-align:center;font-size:13px;color:rgba(255,255,255,.4)}
+
+  .del-confirm{
+    position:absolute;inset:0;z-index:10;
+    background:rgba(0,0,0,.6);backdrop-filter:blur(8px);
+    display:none;align-items:center;justify-content:center;
+  }
+  .del-confirm.show{display:flex}
+  .del-box{
+    background:var(--bg-card);border-radius:20px;padding:32px;text-align:center;
+    max-width:320px;box-shadow:var(--shadow-lg);
+  }
+  .del-box .warn-icon{
+    width:48px;height:48px;margin:0 auto 16px;border-radius:50%;
+    background:var(--danger-dim);display:flex;align-items:center;justify-content:center;
+  }
+  .del-box h3{font-size:16px;font-weight:600;margin-bottom:8px}
+  .del-box p{color:var(--text3);font-size:13px;margin-bottom:24px;line-height:1.5}
+  .del-box .actions{display:flex;gap:10px;justify-content:center}
+
+  .kbd-hints{text-align:center;padding:24px 0 0;color:var(--text3);font-size:11px}
+  .kbd-hints kbd{
+    display:inline-block;padding:2px 6px;font-size:10px;font-family:inherit;
+    background:var(--bg-card);border:1px solid var(--border);border-radius:4px;
+    margin:0 2px;
+  }
+
+  @keyframes slideUp{
+    from{opacity:0;transform:translateY(6px)}
+    to{opacity:1;transform:none}
+  }
+
+  @media(max-width:640px){
+    .container{padding:18px 12px 80px}
+    .grid{grid-template-columns:repeat(auto-fill,minmax(145px,1fr));gap:12px}
+    .card .thumb img{height:115px}
+    .upload-zone{padding:36px 16px}
+    .kbd-hints{display:none}
+    .settings-panel{right:12px;left:12px;width:auto}
+    .fab-settings{bottom:18px;right:18px}
   }
 </style>
 </head>
 <body>
-<div class="wrap">
 
-  <div class="header">
-    <div class="logo">
-      <span>良辰图床</span>
-      <em>v1.0</em>
-    </div>
-    <div class="user">
-      <input type="password" id="token" placeholder="输入访问凭证">
-      <button class="btn sm" onclick="saveToken()">确认</button>
-    </div>
-  </div>
+<div class="container">
 
-  <div class="upload-area" id="dropZone">
-    <div class="icon">📤</div>
-    <p>拖拽图片到这里，或者 <strong>点击选择文件</strong>
-      <small>支持 JPG / PNG / GIF / WebP，单文件最大 10MB</small>
-    </p>
+  <!-- Upload Zone -->
+  <div class="upload-zone" id="dropZone">
+    <div class="upload-icon">
+      <i class="fa-solid fa-cloud-arrow-up"></i>
+    </div>
+    <p>拖拽图片到这里，或 <strong onclick="document.getElementById('fileInput').click()">点击选择文件</strong></p>
+    <small>JPG / PNG / GIF / WebP · 单文件最大 10MB</small>
+    <span class="guest-hint" id="guestHint">游客每小时可上传 20 张</span>
     <input type="file" id="fileInput" accept="image/jpeg,image/png,image/gif,image/webp" multiple>
   </div>
 
-  <div class="result" id="result">
-    <div class="title"><span class="dot"></span> 上传成功</div>
-    <div class="row">
-      <label>链接</label>
-      <input type="text" id="rUrl" readonly>
-      <button class="btn sm" onclick="copy('rUrl')">复制</button>
+  <!-- Progress -->
+  <div class="progress-bar" id="uploadProgress">
+    <div class="progress-info">
+      <span id="uploadFileName">准备上传...</span>
+      <span id="uploadPercent">0%</span>
     </div>
-    <div class="row">
-      <label>缩略</label>
-      <input type="text" id="rThumb" readonly>
-      <button class="btn sm" onclick="copy('rThumb')">复制</button>
-    </div>
-    <div class="preview" id="rPreview"><img id="rPreviewImg"></div>
+    <div class="progress-track"><div class="progress-fill" id="uploadBar"></div></div>
   </div>
 
-  <div class="gallery-bar">
+  <!-- Result -->
+  <div class="result-card" id="result">
+    <div class="result-title"><span class="dot"></span> 上传成功</div>
+    <div class="result-row">
+      <label>链接</label>
+      <input type="text" id="rUrl" readonly>
+      <div class="copy-dropdown">
+        <button class="btn btn-accent sm" onclick="toggleCopyMenu(this)">
+          <i class="fa-regular fa-copy"></i> <i class="fa-solid fa-caret-down" style="font-size:10px"></i>
+        </button>
+        <div class="copy-menu" id="copyMenuUrl">
+          <div class="opt" onclick="copyAs('rUrl','raw')">原始链接</div>
+          <div class="opt" onclick="copyAs('rUrl','md')">Markdown</div>
+          <div class="opt" onclick="copyAs('rUrl','html')">HTML</div>
+        </div>
+      </div>
+    </div>
+    <div class="result-row">
+      <label>缩略</label>
+      <input type="text" id="rThumb" readonly>
+      <div class="copy-dropdown">
+        <button class="btn btn-accent sm" onclick="toggleCopyMenu(this)">
+          <i class="fa-regular fa-copy"></i> <i class="fa-solid fa-caret-down" style="font-size:10px"></i>
+        </button>
+        <div class="copy-menu" id="copyMenuThumb">
+          <div class="opt" onclick="copyAs('rThumb','raw')">原始链接</div>
+          <div class="opt" onclick="copyAs('rThumb','md')">Markdown</div>
+          <div class="opt" onclick="copyAs('rThumb','html')">HTML</div>
+        </div>
+      </div>
+    </div>
+    <div class="result-preview" id="rPreview"><img id="rPreviewImg"></div>
+  </div>
+
+  <!-- Gallery -->
+  <div class="gallery-header">
     <div style="display:flex;align-items:baseline">
-      <h2>图片库</h2>
+      <h2><i class="fa-regular fa-images" style="margin-right:6px;color:var(--text3)"></i>图片库</h2>
       <span class="count" id="totalCount"></span>
     </div>
-    <button class="btn sm ghost" onclick="load(0)">刷新</button>
+    <button class="btn-icon" onclick="load(0)" title="刷新">
+      <i class="fa-solid fa-rotate-right" style="font-size:13px"></i>
+    </button>
   </div>
 
   <div id="gallery"></div>
   <div class="pager" id="pager"></div>
 
+  <div class="kbd-hints">
+    <kbd>Ctrl</kbd>+<kbd>V</kbd> 粘贴上传 &middot;
+    <kbd>ESC</kbd> 关闭预览 &middot;
+    <kbd>&larr;</kbd> <kbd>&rarr;</kbd> 切换图片
+  </div>
+
 </div>
 
+<!-- Toast -->
 <div class="toast" id="toast"></div>
+
+<!-- Settings FAB -->
+<button class="fab-settings" id="fabSettings" onclick="toggleSettings()" title="管理设置">
+  <i class="fa-solid fa-gear"></i>
+</button>
+
+<!-- Settings Panel -->
+<div class="settings-panel" id="settingsPanel">
+  <h3><i class="fa-solid fa-shield-halved" style="margin-right:6px;color:var(--accent)"></i>管理员登录</h3>
+  <div class="field">
+    <label>密码</label>
+    <input type="password" id="tokenInput" placeholder="输入密码">
+  </div>
+  <div class="actions">
+    <button class="btn sm" onclick="clearToken()">清除</button>
+    <button class="btn btn-accent sm" onclick="saveToken()">保存</button>
+  </div>
+  <div class="status" id="tokenStatus"></div>
+</div>
+
+<!-- Lightbox -->
+<div class="lightbox" id="lightbox">
+  <div class="lb-topbar">
+    <div class="lb-counter" id="lbCounter">1 / 10</div>
+    <div class="lb-actions">
+      <div class="copy-dropdown">
+        <button class="lb-btn" onclick="toggleLbCopyMenu()" id="lbCopyBtn">
+          <i class="fa-solid fa-link"></i>
+        </button>
+        <div class="lb-copy-menu" id="lbCopyMenu">
+          <div class="opt" onclick="copyLbAs('raw')"><i class="fa-solid fa-link"></i>原始链接</div>
+          <div class="opt" onclick="copyLbAs('md')"><i class="fa-brands fa-markdown"></i>Markdown</div>
+          <div class="opt" onclick="copyLbAs('html')"><i class="fa-solid fa-code"></i>HTML</div>
+          <div class="opt" onclick="closeLbCopyMenu()" style="color:rgba(255,255,255,.35);margin-top:4px;border-top:1px solid rgba(255,255,255,.06);padding-top:12px;justify-content:center"><i class="fa-solid fa-xmark"></i>取消</div>
+        </div>
+      </div>
+      <button class="lb-btn danger" id="lbDelBtn" onclick="showDelConfirm()" style="display:none">
+        <i class="fa-regular fa-trash-can"></i>
+      </button>
+      <button class="lb-btn" onclick="closeLightbox()">
+        <i class="fa-solid fa-xmark"></i>
+      </button>
+    </div>
+  </div>
+
+  <button class="lb-nav lb-prev" onclick="navLightbox(-1)"><i class="fa-solid fa-chevron-left"></i></button>
+  <button class="lb-nav lb-next" onclick="navLightbox(1)"><i class="fa-solid fa-chevron-right"></i></button>
+
+  <img class="lb-img" id="lbImg" src="" alt="">
+
+  <div class="lb-info">
+    <div>
+      <div class="lb-filename" id="lbFilename"></div>
+      <div class="lb-meta" id="lbMeta"></div>
+    </div>
+  </div>
+
+  <div class="del-confirm" id="delConfirm">
+    <div class="del-box">
+      <div class="warn-icon"><i class="fa-solid fa-triangle-exclamation" style="color:var(--danger)"></i></div>
+      <h3>确认删除</h3>
+      <p>删除后不可恢复，确定要删除这张图片吗？</p>
+      <div class="actions">
+        <button class="btn sm" onclick="hideDelConfirm()">取消</button>
+        <button class="btn btn-danger sm" onclick="confirmDelete()">确认删除</button>
+      </div>
+    </div>
+  </div>
+</div>
 
 <script>
 const PAGE = 24;
 let page = 0;
+let _items = [];
+let _lbIdx = 0;
 
-/* ---- token ---- */
-function getToken(){ return localStorage.getItem('t')||'' }
-function saveToken(){
-  const v = document.getElementById('token').value.trim();
-  if(!v) return;
-  localStorage.setItem('t', v);
-  toast('已保存');
+// ============ Token ============
+function getToken() { return localStorage.getItem('t') || ''; }
+function hasToken() { return !!getToken(); }
+async function saveToken() {
+  const v = document.getElementById('tokenInput').value.trim();
+  if (!v) return;
+  try {
+    const r = await fetch('/api/login', {
+      method: 'POST',
+      headers: {'Content-Type': 'application/json'},
+      body: JSON.stringify({password: v})
+    });
+    if (!r.ok) {
+      showTokenStatus('密码错误', false);
+      return;
+    }
+    const d = await r.json();
+    localStorage.setItem('t', d.token);
+    updateAuthUI();
+    showTokenStatus('登录成功', true);
+    load(0);
+  } catch(e) {
+    showTokenStatus('网络异常', false);
+  }
+}
+function clearToken() {
+  localStorage.removeItem('t');
+  document.getElementById('tokenInput').value = '';
+  updateAuthUI();
+  showTokenStatus('已清除', true);
   load(0);
 }
-document.getElementById('token').value = getToken();
+function showTokenStatus(msg, ok) {
+  const el = document.getElementById('tokenStatus');
+  el.textContent = msg;
+  el.className = 'status show ' + (ok ? 'ok' : 'err');
+  setTimeout(() => el.classList.remove('show'), 2000);
+}
+function updateAuthUI() {
+  const fab = document.getElementById('fabSettings');
+  const delBtn = document.getElementById('lbDelBtn');
+  if (hasToken()) {
+    fab.classList.add('has-token');
+    fab.innerHTML = '<i class="fa-solid fa-shield-halved"></i>';
+    delBtn.style.display = 'flex';
+    document.getElementById('guestHint').textContent = '已登录为管理员';
+  } else {
+    fab.classList.remove('has-token');
+    fab.innerHTML = '<i class="fa-solid fa-gear"></i>';
+    delBtn.style.display = 'none';
+    document.getElementById('guestHint').textContent = '游客每小时可上传 20 张';
+  }
+}
 
-/* ---- toast ---- */
+document.getElementById('tokenInput').value = getToken();
+document.getElementById('tokenInput').addEventListener('keydown', e => { if (e.key === 'Enter') saveToken(); });
+updateAuthUI();
+
+// ============ Settings ============
+function toggleSettings() {
+  document.getElementById('settingsPanel').classList.toggle('show');
+}
+document.addEventListener('click', e => {
+  if (!e.target.closest('.settings-panel') && !e.target.closest('.fab-settings'))
+    document.getElementById('settingsPanel').classList.remove('show');
+});
+
+// ============ Toast ============
 let _tt;
-function toast(s){
-  const el=document.getElementById('toast');
-  el.textContent=s;el.classList.add('show');
-  clearTimeout(_tt);_tt=setTimeout(()=>el.classList.remove('show'),1800);
+function toast(s) {
+  const el = document.getElementById('toast');
+  el.textContent = s;
+  el.classList.add('show');
+  clearTimeout(_tt);
+  _tt = setTimeout(() => el.classList.remove('show'), 1800);
 }
 
-/* ---- upload ---- */
-const drop=document.getElementById('dropZone');
-const fi=document.getElementById('fileInput');
+// ============ Paste Upload ============
+document.addEventListener('paste', e => {
+  const items = e.clipboardData?.items;
+  if (!items) return;
+  const files = [];
+  for (const item of items) {
+    if (item.type.startsWith('image/')) { const f = item.getAsFile(); if (f) files.push(f); }
+  }
+  if (files.length) { e.preventDefault(); goUpload(files); toast(`检测到 ${files.length} 张图片`); }
+});
 
-drop.onclick=()=>fi.click();
-drop.ondragover=e=>{e.preventDefault();drop.classList.add('over')};
-drop.ondragleave=()=>drop.classList.remove('over');
-drop.ondrop=e=>{
-  e.preventDefault();drop.classList.remove('over');
-  goUpload(e.dataTransfer.files);
-};
-fi.onchange=()=>goUpload(fi.files);
+// ============ Upload ============
+const drop = document.getElementById('dropZone');
+const fi = document.getElementById('fileInput');
+drop.onclick = () => fi.click();
+drop.ondragover = e => { e.preventDefault(); drop.classList.add('over'); };
+drop.ondragleave = () => drop.classList.remove('over');
+drop.ondrop = e => { e.preventDefault(); drop.classList.remove('over'); goUpload(e.dataTransfer.files); };
+fi.onchange = () => { if (fi.files.length) goUpload(fi.files); };
 
-async function goUpload(files){
-  for(const f of files) await upload(f);
-  fi.value='';
+async function goUpload(files) {
+  for (let i = 0; i < files.length; i++) await upload(files[i], i + 1, files.length);
+  fi.value = '';
   load(0);
 }
 
-async function upload(file){
-  const fd=new FormData();fd.append('file',file);
-  try{
-    const r=await fetch('/api/upload',{
-      method:'POST',
-      headers:{'Authorization':'Bearer '+getToken()},
-      body:fd
+async function upload(file, idx, total) {
+  const prog = document.getElementById('uploadProgress');
+  const bar = document.getElementById('uploadBar');
+  const fname = document.getElementById('uploadFileName');
+  const pct = document.getElementById('uploadPercent');
+
+  prog.classList.add('show');
+  fname.textContent = `上传中 (${idx}/${total}): ${file.name}`;
+  bar.style.width = '0%';
+  pct.textContent = '0%';
+
+  const fd = new FormData();
+  fd.append('file', file);
+  try {
+    const xhr = new XMLHttpRequest();
+    xhr.open('POST', '/api/upload');
+    if (hasToken()) xhr.setRequestHeader('Authorization', 'Bearer ' + getToken());
+    xhr.upload.onprogress = e => {
+      if (e.lengthComputable) {
+        const p = Math.round(e.loaded / e.total * 100);
+        bar.style.width = p + '%';
+        pct.textContent = p + '%';
+      }
+    };
+    const r = await new Promise((res, rej) => {
+      xhr.onload = () => res({ ok: xhr.status >= 200 && xhr.status < 300, status: xhr.status, json: () => JSON.parse(xhr.responseText) });
+      xhr.onerror = () => rej(new Error('net'));
+      xhr.send(fd);
     });
-    if(!r.ok){
-      const e=await r.json().catch(()=>({}));
-      toast(e.error||'上传失败 ('+r.status+')');
+
+    if (!r.ok) {
+      const err = r.json?.();
+      toast(err?.error || '上传失败 (' + r.status + ')');
+      prog.classList.remove('show');
       return;
     }
-    const d=await r.json();
-    document.getElementById('rUrl').value=d.url;
-    document.getElementById('rThumb').value=d.thumb||'';
-    const pv=document.getElementById('rPreview');
-    const pi=document.getElementById('rPreviewImg');
-    if(d.thumb){pi.src=d.thumb;pv.style.display='block'}
-    else if(d.url){pi.src=d.url;pv.style.display='block'}
-    else pv.style.display='none';
+
+    bar.style.width = '100%';
+    pct.textContent = '100%';
+    const d = r.json();
+    document.getElementById('rUrl').value = d.url;
+    document.getElementById('rThumb').value = d.thumb || '';
+    const pv = document.getElementById('rPreview');
+    const pi = document.getElementById('rPreviewImg');
+    if (d.thumb) { pi.src = d.thumb; pv.style.display = 'block'; }
+    else if (d.url) { pi.src = d.url; pv.style.display = 'block'; }
+    else { pv.style.display = 'none'; }
     document.getElementById('result').classList.add('show');
-    toast('上传成功');
-  }catch(e){toast('网络异常')}
+    setTimeout(() => prog.classList.remove('show'), 600);
+    if (d.remaining !== undefined && d.remaining >= 0) {
+      toast(`上传成功 · 今日剩余 ${d.remaining} 次`);
+    } else {
+      toast('上传成功');
+    }
+  } catch (e) {
+    toast('网络异常');
+    prog.classList.remove('show');
+  }
 }
 
-function copy(id){
-  const el=document.getElementById(id);
-  el.select();el.setSelectionRange(0,99999);
-  navigator.clipboard.writeText(el.value);
-  toast('已复制');
+// ============ Copy ============
+function copyAs(inputId, format) {
+  const url = document.getElementById(inputId).value;
+  let text = url;
+  if (format === 'md') text = `![image](${url})`;
+  if (format === 'html') text = `<img src="${url}" alt="image">`;
+  navigator.clipboard.writeText(text);
+  toast('已复制 ' + { raw: '链接', md: 'Markdown', html: 'HTML' }[format]);
+  closeAllCopyMenus();
 }
+function toggleCopyMenu(btn) {
+  const menu = btn.parentElement.querySelector('.copy-menu');
+  const isOpen = menu.classList.contains('show');
+  closeAllCopyMenus();
+  if (!isOpen) menu.classList.add('show');
+}
+function closeAllCopyMenus() { document.querySelectorAll('.copy-menu').forEach(m => m.classList.remove('show')); }
+document.addEventListener('click', e => {
+  if (!e.target.closest('.copy-menu') && !e.target.closest('[onclick*="toggleCopyMenu"]')) closeAllCopyMenus();
+});
 
-/* ---- gallery ---- */
-async function load(p){
-  page=p;
-  const g=document.getElementById('gallery');
-  const pg=document.getElementById('pager');
-  const tc=document.getElementById('totalCount');
-  g.innerHTML='<div class="empty"><p>加载中…</p></div>';
-  pg.innerHTML='';tc.textContent='';
-
-  try{
-    const r=await fetch(`/api/images?limit=${PAGE}&offset=${p*PAGE}`,{
-      headers:{'Authorization':'Bearer '+getToken()}
-    });
-    if(!r.ok){g.innerHTML='<div class="empty"><div class="icon">😵</div><p>加载失败</p></div>';return}
-    const d=await r.json();
-
-    if(!d.items||!d.items.length){
-      g.innerHTML='<div class="empty"><div class="icon">📷</div><p>还没有图片，上传一张试试</p></div>';
+// ============ Gallery ============
+async function load(p) {
+  page = p;
+  const g = document.getElementById('gallery');
+  const pg = document.getElementById('pager');
+  const tc = document.getElementById('totalCount');
+  g.innerHTML = '<div class="empty"><i class="fa-solid fa-spinner fa-spin"></i><p>加载中...</p></div>';
+  pg.innerHTML = '';
+  tc.textContent = '';
+  try {
+    const headers = {};
+    if (hasToken()) headers['Authorization'] = 'Bearer ' + getToken();
+    const r = await fetch(`/api/images?limit=${PAGE}&offset=${p * PAGE}`, { headers });
+    if (!r.ok) {
+      g.innerHTML = '<div class="empty"><i class="fa-solid fa-circle-exclamation"></i><p>加载失败</p></div>';
       return;
     }
-
-    tc.textContent=`共 ${d.total} 张`;
-    g.innerHTML='<div class="grid">'+d.items.map(i=>`
-      <div class="card">
-        <div class="img-wrap" onclick="window.open('${i.url}','_blank')">
-          <img src="${i.thumb||i.url}" alt="${i.filename}" loading="lazy">
-          <div class="overlay">
-            <button class="btn sm" onclick="event.stopPropagation();cp('${i.url}')">链接</button>
-            <button class="btn sm" onclick="event.stopPropagation();del('${i.id}')">删除</button>
-          </div>
+    const d = await r.json();
+    if (!d.items || !d.items.length) {
+      g.innerHTML = '<div class="empty"><i class="fa-regular fa-image"></i><p>还没有图片，上传一张试试</p></div>';
+      _items = [];
+      return;
+    }
+    _items = d.items;
+    tc.textContent = `共 ${d.total} 张`;
+    g.innerHTML = '<div class="grid">' + d.items.map((i, idx) => `
+      <div class="card" id="card-${i.id}">
+        <div class="thumb" onclick="openLightbox(${idx})">
+          <img src="${i.thumb || i.url}" alt="${i.filename}" loading="lazy">
         </div>
+        <button class="card-action" onclick="event.stopPropagation();copyCardLink(this,'${i.url}')" title="复制链接">
+          <i class="fa-regular fa-copy"></i>
+        </button>
         <div class="meta">
           <div class="name" title="${i.filename}">${i.filename}</div>
-          <div class="info">${i.width}×${i.height} · ${sz(i.size)}</div>
+          <div class="info">${i.width}&times;${i.height} &middot; ${sz(i.size)}</div>
         </div>
       </div>
-    `).join('')+'</div>';
+    `).join('') + '</div>';
 
-    // pager
-    const tp=Math.ceil(d.total/PAGE);
-    if(tp>1){
-      let h='';
-      if(p>0) h+=`<button class="btn sm" onclick="load(${p-1})">上一页</button>`;
-      h+=`<span style="font-size:12px;color:var(--text3)">${p+1} / ${tp}</span>`;
-      if(p<tp-1) h+=`<button class="btn sm" onclick="load(${p+1})">下一页</button>`;
-      pg.innerHTML=h;
+    const tp = Math.ceil(d.total / PAGE);
+    if (tp > 1) {
+      let h = '';
+      if (p > 0) h += `<button class="btn sm" onclick="load(${p - 1})"><i class="fa-solid fa-chevron-left" style="font-size:10px"></i></button>`;
+      const maxShow = 7;
+      let start = Math.max(0, p - Math.floor(maxShow / 2));
+      let end = Math.min(tp, start + maxShow);
+      if (end - start < maxShow) start = Math.max(0, end - maxShow);
+      if (start > 0) h += `<button class="btn sm" onclick="load(0)">1</button>`;
+      if (start > 1) h += `<span style="font-size:12px;color:var(--text3)">...</span>`;
+      for (let i = start; i < end; i++) h += `<button class="btn sm ${i === p ? 'btn-accent' : ''}" onclick="load(${i})">${i + 1}</button>`;
+      if (end < tp - 1) h += `<span style="font-size:12px;color:var(--text3)">...</span>`;
+      if (end < tp) h += `<button class="btn sm" onclick="load(${tp - 1})">${tp}</button>`;
+      if (p < tp - 1) h += `<button class="btn sm" onclick="load(${p + 1})"><i class="fa-solid fa-chevron-right" style="font-size:10px"></i></button>`;
+      pg.innerHTML = h;
     }
-  }catch(e){g.innerHTML='<div class="empty"><div class="icon">😵</div><p>网络异常</p></div>'}
+  } catch (e) {
+    g.innerHTML = '<div class="empty"><i class="fa-solid fa-circle-exclamation"></i><p>网络异常</p></div>';
+  }
 }
 
-function cp(url){navigator.clipboard.writeText(url);toast('已复制')}
-async function del(id){
-  if(!confirm('确认删除？')) return;
-  try{
-    const r=await fetch('/api/images/'+id,{
-      method:'DELETE',headers:{'Authorization':'Bearer '+getToken()}
-    });
-    if(r.ok){toast('已删除');load(page)}else toast('删除失败');
-  }catch(e){toast('网络异常')}
+function copyCardLink(btn, url) {
+  navigator.clipboard.writeText(url);
+  btn.classList.add('copied');
+  btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+  toast('已复制链接');
+  setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '<i class="fa-regular fa-copy"></i>'; }, 1500);
 }
-function sz(b){
-  if(b<1024)return b+' B';
-  if(b<1048576)return (b/1024).toFixed(1)+' KB';
-  return (b/1048576).toFixed(1)+' MB';
+
+// ============ Lightbox ============
+function openLightbox(idx) {
+  _lbIdx = idx;
+  updateLightbox();
+  document.getElementById('lightbox').classList.add('show');
+  document.body.style.overflow = 'hidden';
+}
+function closeLightbox() {
+  document.getElementById('lightbox').classList.remove('show');
+  document.body.style.overflow = '';
+  closeLbCopyMenu(); hideDelConfirm();
+}
+function navLightbox(dir) {
+  _lbIdx += dir;
+  if (_lbIdx < 0) _lbIdx = _items.length - 1;
+  if (_lbIdx >= _items.length) _lbIdx = 0;
+  updateLightbox(); preloadAdjacent();
+}
+function updateLightbox() {
+  const item = _items[_lbIdx];
+  if (!item) return;
+  const img = document.getElementById('lbImg');
+  img.style.opacity = '0';
+  setTimeout(() => { img.src = item.url; img.style.opacity = '1'; }, 50);
+  document.getElementById('lbFilename').textContent = item.filename;
+  document.getElementById('lbMeta').textContent = `${item.width}x${item.height} · ${sz(item.size)}`;
+  document.getElementById('lbCounter').textContent = `${_lbIdx + 1} / ${_items.length}`;
+  closeLbCopyMenu(); hideDelConfirm();
+  document.getElementById('lbCopyBtn').classList.remove('copied');
+}
+function preloadAdjacent() {
+  [_lbIdx - 1, _lbIdx + 1].forEach(i => {
+    if (i >= 0 && i < _items.length) { const img = new Image(); img.src = _items[i].url; }
+  });
+}
+
+function toggleLbCopyMenu() { document.getElementById('lbCopyMenu').classList.toggle('show'); }
+function closeLbCopyMenu() { document.getElementById('lbCopyMenu').classList.remove('show'); }
+function copyLbAs(format) {
+  const item = _items[_lbIdx];
+  if (!item) return;
+  let text = item.url;
+  if (format === 'md') text = `![${item.filename}](${item.url})`;
+  if (format === 'html') text = `<img src="${item.url}" alt="${item.filename}">`;
+  navigator.clipboard.writeText(text);
+  const btn = document.getElementById('lbCopyBtn');
+  btn.classList.add('copied');
+  btn.innerHTML = '<i class="fa-solid fa-check"></i>';
+  closeLbCopyMenu();
+  toast('已复制到剪贴板');
+  setTimeout(() => { btn.classList.remove('copied'); btn.innerHTML = '<i class="fa-solid fa-link"></i>'; }, 2000);
+}
+
+function showDelConfirm() { document.getElementById('delConfirm').classList.add('show'); }
+function hideDelConfirm() { document.getElementById('delConfirm').classList.remove('show'); }
+async function confirmDelete() {
+  const item = _items[_lbIdx];
+  if (!item) return;
+  hideDelConfirm();
+  try {
+    const r = await fetch('/api/images/' + item.id, {
+      method: 'DELETE',
+      headers: { 'Authorization': 'Bearer ' + getToken() }
+    });
+    if (r.ok) {
+      toast('已删除');
+      _items.splice(_lbIdx, 1);
+      if (_items.length === 0) { closeLightbox(); load(0); return; }
+      if (_lbIdx >= _items.length) _lbIdx = _items.length - 1;
+      updateLightbox(); load(page);
+    } else { toast('删除失败'); }
+  } catch (e) { toast('网络异常'); }
+}
+
+// Keyboard
+document.addEventListener('keydown', e => {
+  const lb = document.getElementById('lightbox');
+  if (!lb.classList.contains('show')) return;
+  if (e.key === 'Escape') {
+    if (document.getElementById('delConfirm').classList.contains('show')) hideDelConfirm();
+    else closeLightbox();
+  }
+  if (e.key === 'ArrowLeft') navLightbox(-1);
+  if (e.key === 'ArrowRight') navLightbox(1);
+});
+
+document.getElementById('lightbox').addEventListener('click', e => {
+  if (e.target === document.getElementById('lightbox')) closeLightbox();
+});
+
+let _tx = 0, _ty = 0;
+document.getElementById('lightbox').addEventListener('touchstart', e => {
+  _tx = e.touches[0].clientX; _ty = e.touches[0].clientY;
+}, { passive: true });
+document.getElementById('lightbox').addEventListener('touchend', e => {
+  const dx = e.changedTouches[0].clientX - _tx;
+  const dy = e.changedTouches[0].clientY - _ty;
+  if (Math.abs(dx) > 60 && Math.abs(dx) > Math.abs(dy)) {
+    dx > 0 ? navLightbox(-1) : navLightbox(1);
+  }
+});
+
+document.addEventListener('click', e => {
+  if (!e.target.closest('.lb-copy-menu') && !e.target.closest('[onclick*="toggleLbCopyMenu"]')) closeLbCopyMenu();
+});
+
+function sz(b) {
+  if (b < 1024) return b + ' B';
+  if (b < 1048576) return (b / 1024).toFixed(1) + ' KB';
+  return (b / 1048576).toFixed(1) + ' MB';
 }
 
 load(0);

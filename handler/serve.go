@@ -23,12 +23,33 @@ func (h *ServeHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 
 	// Extract filename from path: /img/{filename}
 	filename := strings.TrimPrefix(r.URL.Path, "/img/")
-	if filename == "" || strings.Contains(filename, "..") || strings.Contains(filename, "/") {
+	if filename == "" {
+		http.Error(w, `{"error":"missing filename"}`, http.StatusBadRequest)
+		return
+	}
+
+	// Reject any path separators and traversal attempts
+	if strings.ContainsAny(filename, `/\\`) || strings.Contains(filename, "..") {
 		http.Error(w, `{"error":"invalid filename"}`, http.StatusBadRequest)
 		return
 	}
 
-	filePath := filepath.Join(h.uploadDir, filename)
+	// Clean and verify the resolved path is within uploadDir
+	cleanName := filepath.Clean(filename)
+	if cleanName == "." || cleanName == ".." {
+		http.Error(w, `{"error":"invalid filename"}`, http.StatusBadRequest)
+		return
+	}
+
+	filePath := filepath.Join(h.uploadDir, cleanName)
+
+	// Final safety check: resolved path must be under uploadDir
+	absUploadDir, _ := filepath.Abs(h.uploadDir)
+	absFilePath, _ := filepath.Abs(filePath)
+	if !strings.HasPrefix(absFilePath, absUploadDir+string(os.PathSeparator)) {
+		http.Error(w, `{"error":"access denied"}`, http.StatusForbidden)
+		return
+	}
 
 	// Check file exists
 	info, err := os.Stat(filePath)
