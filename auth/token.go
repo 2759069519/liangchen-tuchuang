@@ -17,30 +17,60 @@ func InitTokenSecret() {
 	tokenSecret = b
 }
 
-func GenerateToken() (string, error) {
+// GenerateToken creates a signed token with username embedded.
+// Format: hex(timestamp).username.expiry.signature
+func GenerateToken(username string) (string, error) {
 	expiry := time.Now().Add(24 * time.Hour).Unix()
-	payload := hex.EncodeToString([]byte(time.Now().Format("2006-01-02T15:04"))) + "." + intToStr(expiry)
+	payload := hex.EncodeToString([]byte(time.Now().Format("2006-01-02T15:04"))) + "." + username + "." + intToStr(expiry)
 	mac := hmac.New(sha256.New, tokenSecret)
 	mac.Write([]byte(payload))
 	sig := hex.EncodeToString(mac.Sum(nil))
 	return payload + "." + sig, nil
 }
 
-func ValidateToken(tokenStr string) bool {
-	parts := strings.SplitN(tokenStr, ".", 3)
-	if len(parts) != 3 { return false }
-	payload := parts[0] + "." + parts[1]
-	sig := parts[2]
-	mac := hmac.New(sha256.New, tokenSecret)
-	mac.Write([]byte(payload))
-	expected := hex.EncodeToString(mac.Sum(nil))
-	if !hmac.Equal([]byte(sig), []byte(expected)) { return false }
-	expiry := strToInt(parts[1])
-	return time.Now().Unix() <= expiry
+// ValidateToken checks signature and expiry, returns (valid, username).
+// For backward compatibility with old 3-part tokens, username returns "admin".
+func ValidateToken(tokenStr string) (bool, string) {
+	parts := strings.SplitN(tokenStr, ".", 4)
+	if len(parts) == 3 {
+		// Old format: hex(time).expiry.sig (no username)
+		payload := parts[0] + "." + parts[1]
+		sig := parts[2]
+		mac := hmac.New(sha256.New, tokenSecret)
+		mac.Write([]byte(payload))
+		expected := hex.EncodeToString(mac.Sum(nil))
+		if !hmac.Equal([]byte(sig), []byte(expected)) {
+			return false, ""
+		}
+		expiry := strToInt(parts[1])
+		if time.Now().Unix() > expiry {
+			return false, ""
+		}
+		return true, "admin"
+	}
+	if len(parts) == 4 {
+		// New format: hex(time).username.expiry.sig
+		payload := parts[0] + "." + parts[1] + "." + parts[2]
+		sig := parts[3]
+		mac := hmac.New(sha256.New, tokenSecret)
+		mac.Write([]byte(payload))
+		expected := hex.EncodeToString(mac.Sum(nil))
+		if !hmac.Equal([]byte(sig), []byte(expected)) {
+			return false, ""
+		}
+		expiry := strToInt(parts[2])
+		if time.Now().Unix() > expiry {
+			return false, ""
+		}
+		return true, parts[1]
+	}
+	return false, ""
 }
 
 func intToStr(n int64) string {
-	if n == 0 { return "0" }
+	if n == 0 {
+		return "0"
+	}
 	s := ""
 	for n > 0 {
 		s = string(rune('0'+n%10)) + s

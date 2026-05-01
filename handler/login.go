@@ -1,17 +1,16 @@
 package handler
 
 import (
-	"crypto/sha256"
-	"encoding/hex"
 	"encoding/json"
 	"net/http"
 
 	"imgbed/auth"
+
+	"golang.org/x/crypto/bcrypt"
 )
 
 func CheckPasswordHash(password, hash string) bool {
-	h := sha256.Sum256([]byte(password))
-	return hex.EncodeToString(h[:]) == hash
+	return bcrypt.CompareHashAndPassword([]byte(hash), []byte(password)) == nil
 }
 
 type LoginHandler struct {
@@ -56,7 +55,7 @@ func (h *LoginHandler) ServeHTTP(w http.ResponseWriter, r *http.Request) {
 		return
 	}
 
-	token, err := auth.GenerateToken()
+	token, err := auth.GenerateToken("admin")
 	if err != nil {
 		http.Error(w, `{"error":"token generation failed"}`, http.StatusInternalServerError)
 		return

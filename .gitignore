@@ -23,3 +23,5 @@ uploads/
 *.db
 *.db-shm
 *.db-wal
+*.bak
+*.v10bak

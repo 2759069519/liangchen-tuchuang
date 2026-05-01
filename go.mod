@@ -1,10 +1,12 @@
 module imgbed
 
-go 1.22.0
+go 1.25.0
 
 require (
 	github.com/disintegration/imaging v1.6.2
 	github.com/google/uuid v1.6.0
+	golang.org/x/crypto v0.50.0
+	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8
 	modernc.org/sqlite v1.29.6
 )
 
@@ -14,8 +16,7 @@ require (
 	github.com/mattn/go-isatty v0.0.16 // indirect
 	github.com/ncruces/go-strftime v0.1.9 // indirect
 	github.com/remyoudompheng/bigfft v0.0.0-20230129092748-24d4a6f8daec // indirect
-	golang.org/x/image v0.0.0-20191009234506-e7c1f5e7dbb8 // indirect
-	golang.org/x/sys v0.16.0 // indirect
+	golang.org/x/sys v0.43.0 // indirect
 	modernc.org/gc/v3 v3.0.0-20240107210532-573471604cb6 // indirect
 	modernc.org/libc v1.41.0 // indirect
 	modernc.org/mathutil v1.6.0 // indirect

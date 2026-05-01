@@ -2,8 +2,6 @@ package main
 
 import (
 	"context"
-	"crypto/sha256"
-	"encoding/hex"
 	"fmt"
 	"log"
 	"net/http"
@@ -11,6 +9,8 @@ import (
 	"os/signal"
 	"syscall"
 	"time"
+
+	"golang.org/x/crypto/bcrypt"
 
 	"imgbed/auth"
 	"imgbed/handler"
@@ -55,7 +55,9 @@ func getEnvInt64(key string, fallback int64) int64 {
 				n = n*10 + int64(c-'0')
 			}
 		}
-		if n > 0 { return n }
+		if n > 0 {
+			return n
+		}
 	}
 	return fallback
 }
@@ -77,8 +79,11 @@ func main() {
 
 	passwordHash := ""
 	if cfg.AdminPassword != "" {
-		h := sha256.Sum256([]byte(cfg.AdminPassword))
-		passwordHash = hex.EncodeToString(h[:])
+		hash, err := bcrypt.GenerateFromPassword([]byte(cfg.AdminPassword), bcrypt.DefaultCost)
+		if err != nil {
+			log.Fatalf("failed to hash password: %v", err)
+		}
+		passwordHash = string(hash)
 	}
 
 	uploadH := handler.NewUploadHandler(db, cfg.UploadDir, cfg.MaxFileSize, cfg.BaseURL)
@@ -124,7 +129,7 @@ func main() {
 		fmt.Printf("  Auth token: %s\n", cfg.AuthToken[:2]+"***"+cfg.AuthToken[len(cfg.AuthToken)-2:])
 	}
 	if passwordHash != "" {
-		fmt.Printf("  Admin login: enabled\n")
+		fmt.Printf("  Admin login: enabled (bcrypt)\n")
 	}
 	fmt.Printf("  Guest upload limit: 20/hour per IP\n")
 
